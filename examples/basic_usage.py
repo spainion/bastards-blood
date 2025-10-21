@@ -94,6 +94,39 @@ def get_game_state(session_id):
     return response.json()
 
 
+def bootstrap_session_with_character(session_id, character_data):
+    """Bootstrap a session by directly adding a character creation event."""
+    import json
+    from pathlib import Path
+    from datetime import datetime
+    
+    # Load session
+    session_file = Path(f"bastards-blood/data/sessions/{session_id}.json")
+    if not session_file.exists():
+        print(f"Error: Session {session_id} not found")
+        return False
+    
+    with open(session_file, 'r') as f:
+        session = json.load(f)
+    
+    # Add create_char event
+    event = {
+        "id": f"e_{session_id[:8]}",
+        "ts": datetime.utcnow().isoformat() + 'Z',
+        "t": "create_char",
+        "actor": "system",
+        "data": {"character": character_data}
+    }
+    
+    session["events"].append(event)
+    
+    with open(session_file, 'w') as f:
+        json.dump(session, f, indent=2)
+    
+    print(f"\nBootstrapped session with character: {character_data['id']}")
+    return True
+
+
 def main():
     """Run example workflow."""
     print("=" * 60)
@@ -130,13 +163,9 @@ def main():
     }
     create_character(hero)
     
-    # 4. Add character to session (via create_char event)
-    perform_action(
-        session_id=session_id,
-        actor_id="system",
-        action_type="create_char",
-        data={"character": hero}
-    )
+    # 4. Bootstrap session with character (direct file access)
+    # This is needed because the action endpoint requires characters to exist
+    bootstrap_session_with_character(session_id, hero)
     
     # 5. Record speech
     record_speech(
