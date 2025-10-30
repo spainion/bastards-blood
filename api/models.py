@@ -49,7 +49,6 @@ class EventType(str, Enum):
     CHARACTER_TELEPORT = "character_teleport"
     SKILL_CHECK = "skill_check"
     SKILL_LEARN = "skill_learn"
-    SKILL_LEVEL_UP = "skill_level_up"
     SKILL_XP_GAIN = "skill_xp_gain"
     ACTION_MOVE = "action_move"
     ACTION_INTERACT = "action_interact"
@@ -59,6 +58,11 @@ class EventType(str, Enum):
     ACTION_CUSTOM = "action_custom"
     WORLD_INTERACTION = "world_interaction"
     LOCATION_UPDATE = "location_update"
+    # Progressive skills system event types
+    SKILL_XP_GAINED = "skill_xp_gained"
+    SKILL_LEVEL_UP = "skill_level_up"
+    PROGRESSIVE_SKILL_CHECK = "progressive_skill_check"
+    SKILL_ACTION_PERFORMED = "skill_action_performed"
 
 
 class HPStats(BaseModel):

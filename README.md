@@ -70,10 +70,22 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - 🎯 **Action System** - 20+ action types (interact, examine, search, lock, unlock, etc.)
 - 📍 **Location Tracking** - Complete location data with terrain and landmarks
 - 🧭 **Spatial Queries** - Distance calculations, nearby entity detection
-- 🚪 **Interact ions** - Object interactions with skill check requirements
+- 🚪 **Interactions** - Object interactions with skill check requirements
 - 🗺️ **Pathfinding** - Automatic path calculation (planned feature)
 
-**See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md), [NPC_GUIDE.md](NPC_GUIDE.md), and [WORLD_GUIDE.md](WORLD_GUIDE.md) for complete details.**
+### 🆕 RuneScape-Style Skills System
+- 📊 **Progressive Leveling** - 120 level cap with exponential XP requirements
+- 🎮 **24 Skills** - Combat, gathering, artisan, crafting, magic, and support skills
+- 🏆 **Tier System** - Bronze → Iron → Steel → Mithril → Adamant → Rune → Dragon
+- 💪 **Impact on Gameplay** - Higher levels improve success rates, unlock content
+- 🎲 **Skill Checks** - Progressive checks where level affects success (5-95% range)
+- 📈 **Automatic Leveling** - XP-based progression with automatic level-ups
+- 🎯 **Skill Actions** - Mining, woodcutting, fishing, smithing, and more
+- 🔓 **Content Unlocking** - Access to new equipment, resources, and areas by level
+- 🧮 **Combat Level** - Calculated from combat skills
+- 📊 **Total Level** - Sum of all skill levels for overall progression
+
+**See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md), [NPC_GUIDE.md](NPC_GUIDE.md), [WORLD_GUIDE.md](WORLD_GUIDE.md), and [SKILLS_GUIDE.md](SKILLS_GUIDE.md) for complete details.**
 
 ## 🎯 Use Cases
 

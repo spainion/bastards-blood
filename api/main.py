@@ -309,6 +309,13 @@ try:
 except ImportError:
     logger.warning("World/movement endpoints not available")
 
+# Include skills router
+try:
+    from .endpoints_skills import router as skills_router
+    app.include_router(skills_router)
+except ImportError:
+    logger.warning("Skills endpoints not available")
+
 
 # Error handlers
 @app.exception_handler(ValueError)
