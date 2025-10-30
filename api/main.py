@@ -302,6 +302,13 @@ try:
 except ImportError:
     logger.warning("NPC endpoints not available")
 
+# Include world/movement router
+try:
+    from .endpoints_world import router as world_router
+    app.include_router(world_router)
+except ImportError:
+    logger.warning("World/movement endpoints not available")
+
 
 # Error handlers
 @app.exception_handler(ValueError)

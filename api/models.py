@@ -44,6 +44,21 @@ class EventType(str, Enum):
     NPC_DESPAWN = "npc_despawn"
     NPC_MOVE = "npc_move"
     NPC_STATE_CHANGE = "npc_state_change"
+    # World and movement event types
+    CHARACTER_MOVE = "character_move"
+    CHARACTER_TELEPORT = "character_teleport"
+    SKILL_CHECK = "skill_check"
+    SKILL_LEARN = "skill_learn"
+    SKILL_LEVEL_UP = "skill_level_up"
+    SKILL_XP_GAIN = "skill_xp_gain"
+    ACTION_MOVE = "action_move"
+    ACTION_INTERACT = "action_interact"
+    ACTION_EXAMINE = "action_examine"
+    ACTION_SEARCH = "action_search"
+    ACTION_USE = "action_use"
+    ACTION_CUSTOM = "action_custom"
+    WORLD_INTERACTION = "world_interaction"
+    LOCATION_UPDATE = "location_update"
 
 
 class HPStats(BaseModel):

@@ -21,7 +21,8 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
 - **[API_README.md](API_README.md)** - Complete API documentation
 - **[ENHANCED_FEATURES.md](ENHANCED_FEATURES.md)** - Enhanced inventory, equipment, crafting, skills guide
-- **[NPC_GUIDE.md](NPC_GUIDE.md)** - 🆕 Complete NPC management system guide
+- **[NPC_GUIDE.md](NPC_GUIDE.md)** - Complete NPC management system guide
+- **[WORLD_GUIDE.md](WORLD_GUIDE.md)** - 🆕 World coordinates, movement, actions, skills guide
 - **[examples/](examples/)** - Example usage scripts
 - **[bastards-blood/](bastards-blood/)** - Data schemas and structure
 
@@ -48,7 +49,7 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - 🎨 **Customization** - Character appearance, personality, traits
 - 📈 **Progression** - XP tracking, leveling, profession advancement
 
-### 🆕 NPC Management System
+### NPC Management System
 - 🧙 **13 NPC Types** - Merchants, enemies, allies, quest-givers, bosses, companions, etc.
 - 🤖 **Advanced AI** - Tactical, support, ranged, melee, caster AI types
 - 💬 **Dynamic Dialogue** - Context-aware conversations with multiple categories
@@ -60,15 +61,27 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - 🎲 **Loot Tables** - Customizable drops with currency and items
 - 🎭 **Full Customization** - Appearance, voice, behavior patterns
 
-**See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md) and [NPC_GUIDE.md](NPC_GUIDE.md) for complete details.**
+### 🆕 World & Movement System
+- 🗺️ **3D Coordinates** - X, Y, Z positioning with regions and areas
+- 🏃 **10 Movement Types** - Walk, run, sprint, sneak, swim, fly, climb, and more
+- ⚡ **Movement Mechanics** - Auto-calculated distance, duration, stamina costs
+- 🎲 **D20 Skill System** - Skill checks with advantage/disadvantage, critical success/fail
+- 📈 **Skill Progression** - XP-based skill leveling with automatic progression
+- 🎯 **Action System** - 20+ action types (interact, examine, search, lock, unlock, etc.)
+- 📍 **Location Tracking** - Complete location data with terrain and landmarks
+- 🧭 **Spatial Queries** - Distance calculations, nearby entity detection
+- 🚪 **Interact ions** - Object interactions with skill check requirements
+- 🗺️ **Pathfinding** - Automatic path calculation (planned feature)
+
+**See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md), [NPC_GUIDE.md](NPC_GUIDE.md), and [WORLD_GUIDE.md](WORLD_GUIDE.md) for complete details.**
 
 ## 🎯 Use Cases
 
-- Text-based RPG games
-- AI-driven dungeon masters
+- Text-based RPG games with full spatial awareness
+- AI-driven dungeon masters with movement and exploration
 - Multi-player campaign management
 - Discord/Slack bot backends
-- LLM-powered narrative games
+- LLM-powered narrative games with interactive worlds
 - Game session recording and replay
 
 ## 🏗️ Architecture
