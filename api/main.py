@@ -295,6 +295,13 @@ try:
 except ImportError:
     logger.warning("Extended endpoints not available")
 
+# Include NPC router
+try:
+    from .endpoints_npc import router as npc_router
+    app.include_router(npc_router)
+except ImportError:
+    logger.warning("NPC endpoints not available")
+
 
 # Error handlers
 @app.exception_handler(ValueError)

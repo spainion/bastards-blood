@@ -20,7 +20,8 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
 - **[API_README.md](API_README.md)** - Complete API documentation
-- **[ENHANCED_FEATURES.md](ENHANCED_FEATURES.md)** - 🆕 Enhanced inventory, equipment, crafting, skills guide
+- **[ENHANCED_FEATURES.md](ENHANCED_FEATURES.md)** - Enhanced inventory, equipment, crafting, skills guide
+- **[NPC_GUIDE.md](NPC_GUIDE.md)** - 🆕 Complete NPC management system guide
 - **[examples/](examples/)** - Example usage scripts
 - **[bastards-blood/](bastards-blood/)** - Data schemas and structure
 
@@ -36,7 +37,7 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - 🤖 **LLM-Ready** - Designed for AI integration
 - 📝 **Auto-Generated Docs** - Interactive Swagger UI and ReDoc
 
-### 🆕 Enhanced Features
+### Enhanced Features
 - 📦 **Advanced Inventory** - Detailed items with rarity, weight, value, custom properties
 - ⚔️ **Equipment System** - 15+ equipment slots with custom slot support
 - 🔨 **Crafting System** - Recipes, materials, professions, skill progression
@@ -47,7 +48,19 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - 🎨 **Customization** - Character appearance, personality, traits
 - 📈 **Progression** - XP tracking, leveling, profession advancement
 
-**See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md) for complete details and examples.**
+### 🆕 NPC Management System
+- 🧙 **13 NPC Types** - Merchants, enemies, allies, quest-givers, bosses, companions, etc.
+- 🤖 **Advanced AI** - Tactical, support, ranged, melee, caster AI types
+- 💬 **Dynamic Dialogue** - Context-aware conversations with multiple categories
+- 🛒 **Trading System** - Buy/sell with price modifiers and preferred items
+- 📜 **Quest System** - NPCs give, track, and complete quests
+- ❤️ **Relationships** - Reputation, trust, and relationship tracking
+- 📅 **Schedules** - Daily routines and locations
+- ⚔️ **Combat AI** - Intelligent combat behavior and target prioritization
+- 🎲 **Loot Tables** - Customizable drops with currency and items
+- 🎭 **Full Customization** - Appearance, voice, behavior patterns
+
+**See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md) and [NPC_GUIDE.md](NPC_GUIDE.md) for complete details.**
 
 ## 🎯 Use Cases
 

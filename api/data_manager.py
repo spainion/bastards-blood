@@ -19,11 +19,13 @@ class DataManager:
         self.characters_path = self.data_path / "characters"
         self.sessions_path = self.data_path / "sessions"
         self.campaigns_path = self.data_path / "campaigns"
+        self.npcs_path = self.data_path / "npcs"
         
         # Ensure directories exist
         self.characters_path.mkdir(parents=True, exist_ok=True)
         self.sessions_path.mkdir(parents=True, exist_ok=True)
         self.campaigns_path.mkdir(parents=True, exist_ok=True)
+        self.npcs_path.mkdir(parents=True, exist_ok=True)
     
     def load_character(self, character_id: str) -> Optional[Dict[str, Any]]:
         """Load a character from file."""
@@ -43,6 +45,35 @@ class DataManager:
         char_file = self.characters_path / f"{char_id}.json"
         with open(char_file, 'w') as f:
             json.dump(character, f, indent=2)
+    
+    def load_npc(self, npc_id: str) -> Optional[Dict[str, Any]]:
+        """Load an NPC from file."""
+        npc_file = self.npcs_path / f"{npc_id}.json"
+        if not npc_file.exists():
+            return None
+        
+        with open(npc_file, 'r') as f:
+            return json.load(f)
+    
+    def save_npc(self, npc: Dict[str, Any]) -> None:
+        """Save an NPC to file."""
+        npc_id = npc.get('id')
+        if not npc_id:
+            raise ValueError("NPC must have an 'id' field")
+        
+        npc_file = self.npcs_path / f"{npc_id}.json"
+        with open(npc_file, 'w') as f:
+            json.dump(npc, f, indent=2)
+    
+    def delete_npc(self, npc_id: str) -> None:
+        """Delete an NPC file."""
+        npc_file = self.npcs_path / f"{npc_id}.json"
+        if npc_file.exists():
+            npc_file.unlink()
+    
+    def list_npcs(self) -> List[str]:
+        """List all NPC IDs."""
+        return [f.stem for f in self.npcs_path.glob("*.json")]
     
     def load_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Load a session from file."""

@@ -34,6 +34,16 @@ class EventType(str, Enum):
     MODIFY_STAT = "modify_stat"
     MODIFY_ATTRIBUTE = "modify_attribute"
     MODIFY_RESOURCE = "modify_resource"
+    # NPC event types
+    NPC_INTERACTION = "npc_interaction"
+    NPC_DIALOGUE = "npc_dialogue"
+    NPC_TRADE = "npc_trade"
+    NPC_COMBAT = "npc_combat"
+    NPC_RELATIONSHIP_UPDATE = "npc_relationship_update"
+    NPC_SPAWN = "npc_spawn"
+    NPC_DESPAWN = "npc_despawn"
+    NPC_MOVE = "npc_move"
+    NPC_STATE_CHANGE = "npc_state_change"
 
 
 class HPStats(BaseModel):
