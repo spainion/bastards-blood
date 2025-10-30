@@ -49,6 +49,18 @@ app.add_middleware(
 logger = logging.getLogger(__name__)
 
 
+# Startup event to initialize database
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup."""
+    try:
+        from .database import init_db
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+
+
 @app.get("/", tags=["Health"])
 async def root() -> Dict[str, str]:
     """Root endpoint - API information."""
@@ -315,6 +327,27 @@ try:
     app.include_router(skills_router)
 except ImportError:
     logger.warning("Skills endpoints not available")
+
+# Include user/auth router
+try:
+    from .endpoints_users import router as users_router
+    app.include_router(users_router)
+except ImportError:
+    logger.warning("User/auth endpoints not available")
+
+# Include combat router
+try:
+    from .endpoints_combat import router as combat_router
+    app.include_router(combat_router)
+except ImportError:
+    logger.warning("Combat endpoints not available")
+
+# Include WebSocket router
+try:
+    from .websocket import router as websocket_router
+    app.include_router(websocket_router)
+except ImportError:
+    logger.warning("WebSocket endpoint not available")
 
 
 # Error handlers

@@ -1,6 +1,6 @@
 # Bastards Blood RPG
 
-A powerful AI-driven text RPG system with a FastAPI-based endpoint for managing game state, player actions, and speech in a connected world and environment. Features event sourcing, adaptive schema management, and LLM integration capabilities.
+A comprehensive AI-driven RPG system with FastAPI-based endpoint for managing game state, player actions, real-time gameplay, combat, and speech in a connected world. Features user accounts, database persistence, WebSocket support, combat system, event sourcing, and LLM integration.
 
 ## 🚀 Quick Start
 
@@ -9,6 +9,9 @@ See [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup guide.
 ```bash
 # Install dependencies
 pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
 
 # Start the API server
 python run_server.py
@@ -22,21 +25,51 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - **[API_README.md](API_README.md)** - Complete API documentation
 - **[ENHANCED_FEATURES.md](ENHANCED_FEATURES.md)** - Enhanced inventory, equipment, crafting, skills guide
 - **[NPC_GUIDE.md](NPC_GUIDE.md)** - Complete NPC management system guide
-- **[WORLD_GUIDE.md](WORLD_GUIDE.md)** - 🆕 World coordinates, movement, actions, skills guide
+- **[WORLD_GUIDE.md](WORLD_GUIDE.md)** - World coordinates, movement, actions, skills guide
+- **[SKILLS_GUIDE.md](SKILLS_GUIDE.md)** - RuneScape-style progressive skills system
+- **[REALTIME_COMBAT_GUIDE.md](REALTIME_COMBAT_GUIDE.md)** - 🆕 User accounts, real-time gameplay, combat, enemies guide
 - **[examples/](examples/)** - Example usage scripts
 - **[bastards-blood/](bastards-blood/)** - Data schemas and structure
 
 ## ✨ Features
 
 ### Core Features
-- 🎮 **FastAPI Endpoint System** - RESTful API for RPG management
-- 🔐 **Secure Authentication** - API key-based access control
-- 📊 **Event Sourcing** - Complete game history with state reduction
+- 🎮 **FastAPI Endpoint System** - RESTful API for RPG management (51 endpoints)
+- 🔐 **Secure Authentication** - API key + JWT token-based access control
+- 👥 **User Accounts** - Registration, login, user management with database persistence
+- 📊 **Event Sourcing** - Complete game history with state reduction (56 event types)
 - 🎲 **Player Actions** - Attacks, checks, healing, items, and more
 - 💬 **Speech System** - Record and process player dialogue
 - 🌍 **Multi-Campaign Support** - Manage multiple game worlds
 - 🤖 **LLM-Ready** - Designed for AI integration
 - 📝 **Auto-Generated Docs** - Interactive Swagger UI and ReDoc
+
+### Database & Persistence
+- 🗄️ **SQLAlchemy ORM** - Flexible database support (SQLite, PostgreSQL, MySQL)
+- 💾 **Persistent Storage** - Characters, enemies, sessions, combat logs
+- 🔄 **Auto-migrations** - Database schema auto-created on startup
+- 📈 **User-Character Linking** - Characters belong to user accounts
+
+### Real-time & Multiplayer
+- ⚡ **WebSocket Support** - Real-time gameplay updates
+- 👫 **Multiplayer** - See other players in real-time
+- 💬 **Real-time Chat** - In-game chat system
+- 🔔 **Live Notifications** - Combat updates, player movement, NPC interactions
+
+### Combat System
+- ⚔️ **Advanced Combat** - Damage calculation with crits, misses, armor mitigation
+- 🎯 **Skill Integration** - Combat skills affect damage and defense
+- 🏆 **XP & Rewards** - Gain XP and loot from defeating enemies
+- 📜 **Combat Logs** - Complete combat history tracking
+- 💥 **Damage Types** - Physical, fire, ice, lightning, poison, holy, dark, arcane
+
+### Enemies & Mobs
+- 👹 **10 Enemy Templates** - Goblins, orcs, trolls, dragons, demons, and more
+- 📊 **Level Scaling** - Stats and rewards scale with enemy level
+- 🤖 **AI Behaviors** - Aggressive, passive, patrol, flee, call for help
+- 💰 **Loot System** - Random drops with customizable loot tables
+- ♻️ **Respawn System** - Automatic enemy respawning
+- 🗺️ **Spawn Management** - Create enemies at specific locations
 
 ### Enhanced Features
 - 📦 **Advanced Inventory** - Detailed items with rarity, weight, value, custom properties
