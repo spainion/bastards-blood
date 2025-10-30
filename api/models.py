@@ -18,6 +18,22 @@ class EventType(str, Enum):
     CREATE_CHAR = "create_char"
     UPDATE_CHAR = "update_char"
     CUSTOM = "custom"
+    # Extended event types for enhanced features
+    EQUIP_ITEM = "equip_item"
+    UNEQUIP_ITEM = "unequip_item"
+    CRAFT_ITEM = "craft_item"
+    USE_ITEM = "use_item"
+    TRADE_ITEM = "trade_item"
+    APPLY_STATUS_EFFECT = "apply_status_effect"
+    REMOVE_STATUS_EFFECT = "remove_status_effect"
+    LEARN_ABILITY = "learn_ability"
+    USE_ABILITY = "use_ability"
+    LEARN_RECIPE = "learn_recipe"
+    GAIN_XP = "gain_xp"
+    LEVEL_UP = "level_up"
+    MODIFY_STAT = "modify_stat"
+    MODIFY_ATTRIBUTE = "modify_attribute"
+    MODIFY_RESOURCE = "modify_resource"
 
 
 class HPStats(BaseModel):

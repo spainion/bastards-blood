@@ -1,0 +1,440 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "stats",
+    "hp"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique character identifier"
+    },
+    "name": {
+      "type": "string",
+      "description": "Character name"
+    },
+    "class": {
+      "type": "string",
+      "description": "Character class (e.g., Warrior, Mage, Rogue)"
+    },
+    "race": {
+      "type": "string",
+      "description": "Character race (e.g., Human, Elf, Dwarf)"
+    },
+    "lvl": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Character level"
+    },
+    "xp": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Experience points"
+    },
+    "stats": {
+      "type": "object",
+      "description": "Core character statistics",
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "properties": {
+        "STR": {
+          "type": "integer",
+          "description": "Strength"
+        },
+        "DEX": {
+          "type": "integer",
+          "description": "Dexterity"
+        },
+        "CON": {
+          "type": "integer",
+          "description": "Constitution"
+        },
+        "INT": {
+          "type": "integer",
+          "description": "Intelligence"
+        },
+        "WIS": {
+          "type": "integer",
+          "description": "Wisdom"
+        },
+        "CHA": {
+          "type": "integer",
+          "description": "Charisma"
+        }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Derived or custom attributes",
+      "additionalProperties": {
+        "type": ["integer", "number", "string", "boolean"]
+      },
+      "properties": {
+        "speed": {
+          "type": "integer",
+          "description": "Movement speed"
+        },
+        "armor_class": {
+          "type": "integer",
+          "description": "Armor class / defense rating"
+        },
+        "initiative": {
+          "type": "integer",
+          "description": "Initiative bonus"
+        },
+        "carry_capacity": {
+          "type": "integer",
+          "description": "Maximum carry weight"
+        },
+        "magic_resistance": {
+          "type": "integer",
+          "description": "Resistance to magic"
+        }
+      }
+    },
+    "hp": {
+      "type": "object",
+      "required": ["max", "current"],
+      "description": "Hit points",
+      "properties": {
+        "max": {
+          "type": "integer",
+          "description": "Maximum HP"
+        },
+        "current": {
+          "type": "integer",
+          "description": "Current HP"
+        },
+        "temp": {
+          "type": "integer",
+          "description": "Temporary HP"
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "description": "Character resources (mana, stamina, etc.)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "max": {
+            "type": "integer"
+          },
+          "current": {
+            "type": "integer"
+          }
+        }
+      },
+      "properties": {
+        "mana": {
+          "type": "object",
+          "properties": {
+            "max": {"type": "integer"},
+            "current": {"type": "integer"}
+          }
+        },
+        "stamina": {
+          "type": "object",
+          "properties": {
+            "max": {"type": "integer"},
+            "current": {"type": "integer"}
+          }
+        }
+      }
+    },
+    "inventory": {
+      "type": "array",
+      "description": "Items in inventory",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Item ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Item name"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["weapon", "armor", "consumable", "material", "quest", "misc"],
+            "description": "Item type"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Item quantity"
+          },
+          "weight": {
+            "type": "number",
+            "description": "Item weight"
+          },
+          "value": {
+            "type": "integer",
+            "description": "Item value in gold"
+          },
+          "rarity": {
+            "type": "string",
+            "enum": ["common", "uncommon", "rare", "epic", "legendary"],
+            "description": "Item rarity"
+          },
+          "properties": {
+            "type": "object",
+            "description": "Custom item properties",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "equipment": {
+      "type": "object",
+      "description": "Equipped items",
+      "properties": {
+        "head": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Head slot"
+        },
+        "neck": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Neck slot"
+        },
+        "chest": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Chest/body slot"
+        },
+        "back": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Back/cloak slot"
+        },
+        "hands": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Hands/gloves slot"
+        },
+        "waist": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Waist/belt slot"
+        },
+        "legs": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Legs slot"
+        },
+        "feet": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Feet/boots slot"
+        },
+        "main_hand": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Main hand weapon"
+        },
+        "off_hand": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Off hand weapon/shield"
+        },
+        "ranged": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Ranged weapon"
+        },
+        "ring_1": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Ring slot 1"
+        },
+        "ring_2": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Ring slot 2"
+        },
+        "trinket_1": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Trinket slot 1"
+        },
+        "trinket_2": {
+          "$ref": "#/properties/inventory/items",
+          "description": "Trinket slot 2"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/properties/inventory/items",
+        "description": "Custom equipment slots"
+      }
+    },
+    "skills": {
+      "type": "object",
+      "description": "Character skills and proficiencies",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bonus": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "abilities": {
+      "type": "array",
+      "description": "Special abilities, spells, or powers",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["spell", "ability", "skill", "passive"]
+          },
+          "cost": {
+            "type": "object",
+            "description": "Resource cost",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "cooldown": {
+            "type": "integer",
+            "description": "Cooldown in turns/seconds"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "status_effects": {
+      "type": "array",
+      "description": "Active status effects (buffs, debuffs)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["buff", "debuff", "neutral"]
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration in turns/seconds"
+          },
+          "stacks": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of stacks"
+          },
+          "effects": {
+            "type": "object",
+            "description": "Stat modifiers",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "crafting": {
+      "type": "object",
+      "description": "Crafting recipes and progress",
+      "properties": {
+        "known_recipes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Known crafting recipes"
+        },
+        "professions": {
+          "type": "object",
+          "description": "Crafting profession levels",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "level": {
+                "type": "integer"
+              },
+              "xp": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "currency": {
+      "type": "object",
+      "description": "Character currencies",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "properties": {
+        "gold": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "silver": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "copper": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "description": "Character tags",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Character notes"
+    },
+    "customization": {
+      "type": "object",
+      "description": "Character appearance and customization",
+      "properties": {
+        "appearance": {
+          "type": "object",
+          "properties": {
+            "height": {"type": "string"},
+            "weight": {"type": "string"},
+            "hair_color": {"type": "string"},
+            "eye_color": {"type": "string"},
+            "skin_tone": {"type": "string"},
+            "age": {"type": "integer"}
+          }
+        },
+        "personality": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "integer"]
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

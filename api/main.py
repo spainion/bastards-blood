@@ -288,6 +288,14 @@ async def handle_speech(speech: SpeechRequest) -> ActionResponse:
     )
 
 
+# Include extended features router
+try:
+    from .endpoints_extended import router as extended_router
+    app.include_router(extended_router)
+except ImportError:
+    logger.warning("Extended endpoints not available")
+
+
 # Error handlers
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
