@@ -4,7 +4,7 @@ import os
 import copy
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 from .models import Character, Event, Session, EventType
 from .config import settings
@@ -89,7 +89,7 @@ class DataManager:
         
         # Add timestamp if not present
         if 'ts' not in event:
-            event['ts'] = datetime.utcnow().isoformat() + 'Z'
+            event['ts'] = datetime.now(timezone.utc).isoformat() + 'Z'
         
         session['events'].append(event)
         self.save_session(session)

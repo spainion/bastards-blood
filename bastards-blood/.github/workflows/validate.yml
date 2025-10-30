@@ -10,7 +10,6 @@ jobs:
           node-version: '20'
       - run: npm i -g ajv-cli
       - run: |
-          ajv validate -s schemas/character.schema.json -d 'data/characters/*.json' --errors=text || true
-          ajv validate -s schemas/event.schema.json -d 'data/sessions/*.json' --errors=text || true
-          ajv validate -s schemas/session.schema.json -d 'data/sessions/*.json' --errors=text || true
-          if ajv validate -s schemas/session.schema.json -d 'data/sessions/*.json' ; then exit 0; else exit 1; fi
+          ajv validate -s schemas/character.schema.json -d 'data/characters/*.json' --errors=text
+          ajv validate -s schemas/event.schema.json -d 'data/sessions/*.json' --errors=text
+          ajv validate -s schemas/session.schema.json -d 'data/sessions/*.json' --errors=text

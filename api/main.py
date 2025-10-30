@@ -2,9 +2,10 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List
 import os
+import logging
 
 from .config import settings
 from .auth import verify_api_key
@@ -44,6 +45,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
 
 @app.get("/", tags=["Health"])
 async def root() -> Dict[str, str]:
@@ -62,7 +66,7 @@ async def health_check() -> HealthCheckResponse:
     return HealthCheckResponse(
         status="healthy",
         version=settings.api_version,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
 
@@ -177,7 +181,7 @@ async def get_game_state(session_id: str) -> GameStateResponse:
             characters[char_id] = Character(**char_data)
         except Exception as e:
             # If character data is invalid, skip it
-            print(f"Warning: Invalid character data for {char_id}: {e}")
+            logger.warning(f"Invalid character data for {char_id}: {e}")
     
     return GameStateResponse(
         characters=characters,
@@ -215,7 +219,7 @@ async def perform_action(action: ActionRequest) -> ActionResponse:
     event_id = data_manager.generate_event_id()
     event = {
         "id": event_id,
-        "ts": datetime.utcnow().isoformat() + 'Z',
+        "ts": datetime.now(timezone.utc).isoformat() + 'Z',
         "t": action.action_type.value,
         "actor": action.actor_id,
         "target": action.target_id,
@@ -262,7 +266,7 @@ async def handle_speech(speech: SpeechRequest) -> ActionResponse:
     event_id = data_manager.generate_event_id()
     event = {
         "id": event_id,
-        "ts": datetime.utcnow().isoformat() + 'Z',
+        "ts": datetime.now(timezone.utc).isoformat() + 'Z',
         "t": "note",
         "actor": speech.character_id,
         "data": {

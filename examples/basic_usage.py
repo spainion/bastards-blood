@@ -96,9 +96,8 @@ def get_game_state(session_id):
 
 def bootstrap_session_with_character(session_id, character_data):
     """Bootstrap a session by directly adding a character creation event."""
-    import json
     from pathlib import Path
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     # Load session
     session_file = Path(f"bastards-blood/data/sessions/{session_id}.json")
@@ -112,7 +111,7 @@ def bootstrap_session_with_character(session_id, character_data):
     # Add create_char event
     event = {
         "id": f"e_{session_id[:8]}",
-        "ts": datetime.utcnow().isoformat() + 'Z',
+        "ts": datetime.now(timezone.utc).isoformat() + 'Z',
         "t": "create_char",
         "actor": "system",
         "data": {"character": character_data}
