@@ -27,7 +27,9 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - **[NPC_GUIDE.md](NPC_GUIDE.md)** - Complete NPC management system guide
 - **[WORLD_GUIDE.md](WORLD_GUIDE.md)** - World coordinates, movement, actions, skills guide
 - **[SKILLS_GUIDE.md](SKILLS_GUIDE.md)** - RuneScape-style progressive skills system
-- **[REALTIME_COMBAT_GUIDE.md](REALTIME_COMBAT_GUIDE.md)** - 🆕 User accounts, real-time gameplay, combat, enemies guide
+- **[REALTIME_COMBAT_GUIDE.md](REALTIME_COMBAT_GUIDE.md)** - User accounts, real-time gameplay, combat, enemies guide
+- **[ADMIN_DASHBOARD_GUIDE.md](ADMIN_DASHBOARD_GUIDE.md)** - 🆕 Admin tools, in-game editing, server management
+- **[CLIENT_ARCHITECTURE.md](CLIENT_ARCHITECTURE.md)** - 🆕 Cross-platform client blueprint & best practices
 - **[examples/](examples/)** - Example usage scripts
 - **[bastards-blood/](bastards-blood/)** - Data schemas and structure
 
@@ -118,7 +120,28 @@ Then visit http://localhost:8000/docs for interactive API documentation.
 - 🧮 **Combat Level** - Calculated from combat skills
 - 📊 **Total Level** - Sum of all skill levels for overall progression
 
-**See [ENHANCED_FEATURES.md](ENHANCED_FEATURES.md), [NPC_GUIDE.md](NPC_GUIDE.md), [WORLD_GUIDE.md](WORLD_GUIDE.md), and [SKILLS_GUIDE.md](SKILLS_GUIDE.md) for complete details.**
+### 🆕 Admin Dashboard & Multiplayer Tools
+- 👑 **Admin Authentication** - Role-based access control (user/admin roles)
+- 📊 **Server Statistics** - Real-time monitoring of users, sessions, players
+- 🎮 **In-Game Editing** - Spawn entities, modify characters, teleport players
+- 🔧 **Entity Spawning** - Create enemies, NPCs, items at any location
+- 💬 **Broadcast Messages** - Send announcements to all connected players
+- 👥 **Player Management** - Kick players, pause/resume sessions
+- 📜 **Audit Logs** - Complete history of all admin actions
+- 🔍 **Real-Time Monitoring** - Admin WebSocket for live game activity
+- 🎛️ **Session Control** - Pause, resume, or end game sessions
+
+### 🆕 Client Architecture Support
+- 🏗️ **Server-Authoritative** - All game logic runs on server
+- 📱 **Cross-Platform Blueprint** - Guides for Web, Unity, Mobile, Godot
+- 🔄 **Client Prediction** - Optional prediction for smooth UX
+- 🔐 **Security Design** - Clients only submit actions, never results
+- 📡 **Communication Patterns** - REST API + WebSocket best practices
+- ⚡ **Performance Optimization** - Object pooling, batching, caching strategies
+- 🎯 **State Management** - Local caching and reconciliation patterns
+- 🛠️ **Error Handling** - Reconnection, validation, and recovery
+
+**See documentation for complete details on each system.**
 
 ## 🎯 Use Cases
 

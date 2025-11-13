@@ -360,6 +360,17 @@ async def value_error_handler(request, exc):
     )
 
 
+# Include admin and multiplayer routers
+try:
+    from .endpoints_admin import router as admin_router, social_router, multiplayer_router
+    app.include_router(admin_router)
+    app.include_router(social_router)
+    app.include_router(multiplayer_router)
+    logger.info("Admin and multiplayer routers loaded successfully")
+except Exception as e:
+    logger.warning(f"Could not load admin/multiplayer routers: {e}")
+
+
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     """Handle general exceptions."""
