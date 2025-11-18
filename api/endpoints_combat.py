@@ -12,7 +12,7 @@ from .models_combat import (
     EnemyListQuery, EnemyType, DamageType, AIBehavior, CombatStats
 )
 from .endpoints_users import verify_token
-from .data_manager import RPGDataManager
+from .data_manager import DataManager as RPGDataManager
 
 router = APIRouter(prefix="/api/v1/combat", tags=["Combat & Enemies"])
 
