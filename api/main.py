@@ -349,6 +349,27 @@ try:
 except ImportError:
     logger.warning("WebSocket endpoint not available")
 
+# Include Quest router
+try:
+    from .endpoints_quest import router as quest_router
+    app.include_router(quest_router)
+except ImportError:
+    logger.warning("Quest endpoints not available")
+
+# Include Marketplace router
+try:
+    from .endpoints_marketplace import router as marketplace_router
+    app.include_router(marketplace_router)
+except ImportError:
+    logger.warning("Marketplace endpoints not available")
+
+# Include Navigation router
+try:
+    from .endpoints_navigation import router as navigation_router
+    app.include_router(navigation_router)
+except ImportError:
+    logger.warning("Navigation endpoints not available")
+
 
 # Error handlers
 @app.exception_handler(ValueError)
