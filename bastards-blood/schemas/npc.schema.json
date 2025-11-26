@@ -1,0 +1,456 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "npc_type",
+    "stats",
+    "hp"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^npc-[a-z0-9-]+$",
+      "description": "Unique NPC identifier with 'npc-' prefix"
+    },
+    "name": {
+      "type": "string",
+      "description": "NPC name"
+    },
+    "npc_type": {
+      "type": "string",
+      "enum": ["merchant", "enemy", "ally", "neutral", "quest_giver", "guard", "companion", "boss", "vendor", "trainer", "innkeeper", "blacksmith", "custom"],
+      "description": "NPC type defining role and behavior"
+    },
+    "class": {
+      "type": "string",
+      "description": "NPC class (e.g., Warrior, Mage, Rogue)"
+    },
+    "race": {
+      "type": "string",
+      "description": "NPC race (e.g., Human, Elf, Orc)"
+    },
+    "lvl": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "NPC level"
+    },
+    "faction": {
+      "type": "string",
+      "description": "NPC faction affiliation"
+    },
+    "stats": {
+      "type": "object",
+      "description": "Core NPC statistics",
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "properties": {
+        "STR": {"type": "integer"},
+        "DEX": {"type": "integer"},
+        "CON": {"type": "integer"},
+        "INT": {"type": "integer"},
+        "WIS": {"type": "integer"},
+        "CHA": {"type": "integer"}
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Derived or custom attributes",
+      "additionalProperties": {
+        "type": ["integer", "number", "string", "boolean"]
+      },
+      "properties": {
+        "speed": {"type": "integer"},
+        "armor_class": {"type": "integer"},
+        "initiative": {"type": "integer"},
+        "perception": {"type": "integer"},
+        "stealth": {"type": "integer"}
+      }
+    },
+    "hp": {
+      "type": "object",
+      "required": ["max", "current"],
+      "properties": {
+        "max": {"type": "integer"},
+        "current": {"type": "integer"},
+        "temp": {"type": "integer"}
+      }
+    },
+    "resources": {
+      "type": "object",
+      "description": "NPC resources (mana, stamina, etc.)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "max": {"type": "integer"},
+          "current": {"type": "integer"}
+        }
+      }
+    },
+    "inventory": {
+      "type": "array",
+      "description": "NPC inventory",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "type": {"type": "string"},
+          "quantity": {"type": "integer", "minimum": 1},
+          "weight": {"type": "number"},
+          "value": {"type": "integer"},
+          "rarity": {"type": "string"},
+          "properties": {"type": "object"}
+        }
+      }
+    },
+    "equipment": {
+      "type": "object",
+      "description": "NPC equipped items",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "abilities": {
+      "type": "array",
+      "description": "NPC abilities and spells",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "type": {"type": "string"},
+          "cost": {"type": "object"},
+          "cooldown": {"type": "integer"},
+          "description": {"type": "string"}
+        }
+      }
+    },
+    "behavior": {
+      "type": "object",
+      "description": "NPC behavior patterns",
+      "properties": {
+        "aggression": {
+          "type": "string",
+          "enum": ["passive", "defensive", "neutral", "aggressive", "hostile"],
+          "description": "Combat behavior"
+        },
+        "disposition": {
+          "type": "string",
+          "enum": ["friendly", "neutral", "unfriendly", "hostile"],
+          "description": "General attitude toward players"
+        },
+        "wander": {
+          "type": "boolean",
+          "description": "Whether NPC wanders"
+        },
+        "patrol_route": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Patrol locations"
+        },
+        "flee_threshold": {
+          "type": "integer",
+          "description": "HP percentage at which NPC flees"
+        },
+        "call_for_help": {
+          "type": "boolean",
+          "description": "Whether NPC calls for help"
+        }
+      }
+    },
+    "dialogue": {
+      "type": "object",
+      "description": "NPC dialogue options",
+      "properties": {
+        "greeting": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Greeting dialogue options"
+        },
+        "farewell": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Farewell dialogue options"
+        },
+        "trade": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Trade-related dialogue"
+        },
+        "combat": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Combat taunts/reactions"
+        },
+        "custom": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "description": "Custom dialogue categories"
+        }
+      }
+    },
+    "trade": {
+      "type": "object",
+      "description": "NPC trading information",
+      "properties": {
+        "can_trade": {
+          "type": "boolean",
+          "description": "Whether NPC can trade"
+        },
+        "buy_rate": {
+          "type": "number",
+          "description": "Price multiplier for buying from NPC"
+        },
+        "sell_rate": {
+          "type": "number",
+          "description": "Price multiplier for selling to NPC"
+        },
+        "currency": {
+          "type": "object",
+          "additionalProperties": {"type": "integer"},
+          "description": "NPC available currency"
+        },
+        "trade_inventory": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Items available for trade"
+        },
+        "preferred_items": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Items NPC prefers to buy"
+        }
+      }
+    },
+    "quest": {
+      "type": "object",
+      "description": "NPC quest-giving information",
+      "properties": {
+        "can_give_quests": {
+          "type": "boolean"
+        },
+        "active_quests": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Quest IDs this NPC offers"
+        },
+        "completed_quests": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Quests already completed with this NPC"
+        }
+      }
+    },
+    "relationships": {
+      "type": "object",
+      "description": "NPC relationships with players and other NPCs",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "reputation": {
+            "type": "integer",
+            "description": "Reputation value (-100 to 100)"
+          },
+          "relationship_type": {
+            "type": "string",
+            "enum": ["enemy", "rival", "neutral", "acquaintance", "friend", "ally", "family", "lover"],
+            "description": "Type of relationship"
+          },
+          "trust_level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Trust level (0-100)"
+          }
+        }
+      }
+    },
+    "schedule": {
+      "type": "object",
+      "description": "NPC daily schedule",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether NPC follows a schedule"
+        },
+        "activities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": {"type": "string", "description": "Time of day (e.g., '08:00', 'morning')"},
+              "location": {"type": "string"},
+              "activity": {"type": "string"},
+              "duration": {"type": "integer", "description": "Duration in minutes"}
+            }
+          }
+        }
+      }
+    },
+    "ai": {
+      "type": "object",
+      "description": "AI behavior settings",
+      "properties": {
+        "ai_type": {
+          "type": "string",
+          "enum": ["simple", "tactical", "support", "ranged", "melee", "caster", "custom"],
+          "description": "AI behavior type"
+        },
+        "combat_style": {
+          "type": "string",
+          "description": "Preferred combat style"
+        },
+        "target_priority": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Target priority order (e.g., ['healer', 'mage', 'warrior'])"
+        },
+        "use_abilities": {
+          "type": "boolean",
+          "description": "Whether AI uses special abilities"
+        },
+        "use_items": {
+          "type": "boolean",
+          "description": "Whether AI uses consumable items"
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "description": "NPC current location",
+      "properties": {
+        "area": {"type": "string"},
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": {"type": "number"},
+            "y": {"type": "number"},
+            "z": {"type": "number"}
+          }
+        },
+        "home_location": {"type": "string"}
+      }
+    },
+    "spawning": {
+      "type": "object",
+      "description": "NPC spawning information",
+      "properties": {
+        "can_respawn": {
+          "type": "boolean"
+        },
+        "respawn_time": {
+          "type": "integer",
+          "description": "Respawn time in seconds"
+        },
+        "spawn_location": {"type": "string"},
+        "spawn_condition": {"type": "string"}
+      }
+    },
+    "loot": {
+      "type": "object",
+      "description": "NPC loot table",
+      "properties": {
+        "drop_chance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Base drop chance (0-1)"
+        },
+        "guaranteed_drops": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Items that always drop"
+        },
+        "possible_drops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "item_id": {"type": "string"},
+              "chance": {"type": "number"},
+              "quantity_min": {"type": "integer"},
+              "quantity_max": {"type": "integer"}
+            }
+          }
+        },
+        "currency_drops": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {"type": "integer"},
+              "max": {"type": "integer"}
+            }
+          }
+        }
+      }
+    },
+    "status_effects": {
+      "type": "array",
+      "description": "Active status effects on NPC",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "type": {"type": "string"},
+          "duration": {"type": "integer"},
+          "stacks": {"type": "integer"},
+          "effects": {"type": "object"}
+        }
+      }
+    },
+    "customization": {
+      "type": "object",
+      "description": "NPC appearance and customization",
+      "properties": {
+        "appearance": {
+          "type": "object",
+          "properties": {
+            "height": {"type": "string"},
+            "build": {"type": "string"},
+            "hair_color": {"type": "string"},
+            "eye_color": {"type": "string"},
+            "skin_tone": {"type": "string"},
+            "age": {"type": "integer"},
+            "distinctive_features": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "voice": {
+          "type": "object",
+          "properties": {
+            "pitch": {"type": "string"},
+            "accent": {"type": "string"},
+            "speech_pattern": {"type": "string"}
+          }
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "NPC tags for categorization"
+    },
+    "notes": {
+      "type": "string",
+      "description": "GM/admin notes about NPC"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "properties": {
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"},
+        "created_by": {"type": "string"},
+        "version": {"type": "string"}
+      }
+    }
+  },
+  "additionalProperties": true
+}
