@@ -370,6 +370,14 @@ try:
 except ImportError:
     logger.warning("Navigation endpoints not available")
 
+# Include World Builder router
+try:
+    from .endpoints_world_builder import router as world_builder_router
+    app.include_router(world_builder_router)
+    logger.info("World builder router loaded successfully")
+except ImportError as e:
+    logger.warning(f"World builder endpoints not available: {e}")
+
 
 # Error handlers
 @app.exception_handler(ValueError)
