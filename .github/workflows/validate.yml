@@ -1,0 +1,16 @@
+name: Validate data
+on: [pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm i -g ajv-cli ajv-formats
+      - run: |
+          ajv validate --data -c ajv-formats -s schemas/character.schema.json -d 'data/characters/*.json' --errors=text
+          ajv validate --data -c ajv-formats -r schemas/event.schema.json -s schemas/session.schema.json -d 'data/sessions/*.json' --errors=text

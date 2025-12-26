@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "session.schema.json",
+  "type": "object",
+  "required": [
+    "id",
+    "campaign",
+    "events"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "campaign": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "./event.schema.json"
+      }
+    }
+  },
+  "additionalProperties": false
+}
