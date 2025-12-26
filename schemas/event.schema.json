@@ -10,7 +10,7 @@
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^e_[a-z0-9]{8}$"
+      "pattern": "^e_[a-z0-9]{8,}$"
     },
     "ts": {
       "type": "string",

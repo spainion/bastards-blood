@@ -1,36 +1,69 @@
-import json, sys, copy
+import copy
+import json
+import sys
 
 def reduce(state, ev):
     s = copy.deepcopy(state)
     t = ev.get("t")
     d = ev.get("data", {})
     r = ev.get("result", {})
+
+    def require_keys(obj, keys, ctx):
+        missing = [k for k in keys if k not in obj]
+        if missing:
+            raise KeyError(f"{ctx} missing keys: {', '.join(missing)}")
+
+    def ensure_char(cid):
+        if cid not in s["characters"]:
+            raise KeyError(f"unknown character id {cid}")
+        return s["characters"][cid]
+
+    def get_amount():
+        return r.get("amount", d.get("amount", 0))
+
+    require_keys(ev, ["id", "ts", "t"], "event")
     if t == "create_char":
+        require_keys(d, ["character"], "create_char data")
         c = d["character"]
         s["characters"][c["id"]] = c
     elif t == "update_char":
+        require_keys(d, ["id", "patch"], "update_char data")
         cid = d["id"]
-        s["characters"][cid].update(d["patch"])
+        ensure_char(cid).update(d["patch"])
     elif t == "gain_item":
-        cid = d["id"]; item = d["item"]
-        s["characters"][cid].setdefault("inventory", []).append(item)
+        require_keys(d, ["id", "item"], "gain_item data")
+        cid = d["id"]
+        item = d["item"]
+        ensure_char(cid).setdefault("inventory", []).append(item)
     elif t == "lose_item":
-        cid = d["id"]; item = d["item"]
-        inv = s["characters"][cid].get("inventory", [])
-        if item in inv: inv.remove(item)
+        require_keys(d, ["id", "item"], "lose_item data")
+        cid = d["id"]
+        item = d["item"]
+        inv = ensure_char(cid).get("inventory", [])
+        # remove a single instance if present
+        if item in inv:
+            inv.remove(item)
     elif t == "damage":
-        cid = d["id"]; amt = r.get("amount", d.get("amount", 0))
-        s["characters"][cid]["hp"]["current"] = max(
-            0, s["characters"][cid]["hp"]["current"] - amt)
+        require_keys(d, ["id"], "damage data")
+        cid = d["id"]
+        amt = get_amount()
+        hp = ensure_char(cid).get("hp", {})
+        require_keys(hp, ["current"], f"hp for {cid}")
+        hp["current"] = max(0, hp["current"] - amt)
     elif t == "heal":
-        cid = d["id"]; amt = r.get("amount", d.get("amount", 0))
-        mx = s["characters"][cid]["hp"]["max"]
-        s["characters"][cid]["hp"]["current"] = min(
-            mx, s["characters"][cid]["hp"]["current"] + amt)
+        require_keys(d, ["id"], "heal data")
+        cid = d["id"]
+        amt = get_amount()
+        hp = ensure_char(cid).get("hp", {})
+        require_keys(hp, ["max", "current"], f"hp for {cid}")
+        hp["current"] = min(hp["max"], hp["current"] + amt)
     return s
 
 if __name__ == "__main__":
-    sess = json.load(sys.stdin)  # session JSON
+    sess = json.load(sys.stdin)  # session JSON with id, campaign, events[]
+    for key in ("id", "campaign", "events"):
+        if key not in sess:
+            raise KeyError(f"session missing {key}")
     state = {"characters": {}}
     for ev in sess["events"]:
         state = reduce(state, ev)

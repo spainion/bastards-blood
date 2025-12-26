@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "character.schema.json",
   "type": "object",
   "required": [
     "id",
@@ -56,10 +57,15 @@
       ],
       "properties": {
         "max": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0
         },
         "current": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 0,
+          "maximum": {
+            "$data": "1/max"
+          }
         }
       }
     },

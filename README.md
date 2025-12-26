@@ -9,7 +9,6 @@ schemas/
 data/
   characters/
   sessions/
-  campaigns/
 scripts/
 .github/workflows/
 ```
