@@ -6,10 +6,9 @@ Edit via pull requests only. CI validates schemas.
 ## Layout
 ```
 schemas/
-data/
-  characters/
-  sessions/
-  campaigns/
-scripts/
-.github/workflows/
+  data/
+    characters/
+    sessions/
+  scripts/
+  .github/workflows/
 ```
