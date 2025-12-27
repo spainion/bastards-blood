@@ -1,0 +1,116 @@
+name: GPT Narrative Logger
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: 'Session ID'
+        required: true
+        type: string
+      narrative_type:
+        description: 'Type of narrative entry'
+        required: true
+        type: choice
+        options:
+          - scene_description
+          - dialogue
+          - action_description
+          - combat_narration
+          - discovery
+          - rest_scene
+          - travel_description
+          - npc_interaction
+          - plot_point
+          - chapter_end
+      narrative_text:
+        description: 'Narrative text content'
+        required: true
+        type: string
+      characters_involved:
+        description: 'Comma-separated character IDs involved'
+        required: false
+        type: string
+      location:
+        description: 'Current location'
+        required: false
+        type: string
+      mood:
+        description: 'Scene mood/atmosphere'
+        required: false
+        type: string
+  repository_dispatch:
+    types: [gpt-narrative]
+
+permissions:
+  contents: write
+
+jobs:
+  log-narrative:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "session_id=${{ github.event.client_payload.session_id }}" >> $GITHUB_OUTPUT
+            echo "narrative_type=${{ github.event.client_payload.narrative_type }}" >> $GITHUB_OUTPUT
+            echo "characters=${{ github.event.client_payload.characters_involved }}" >> $GITHUB_OUTPUT
+            echo "location=${{ github.event.client_payload.location }}" >> $GITHUB_OUTPUT
+            echo "mood=${{ github.event.client_payload.mood }}" >> $GITHUB_OUTPUT
+            # Store narrative text in file to preserve formatting
+            cat << 'NARRATIVE_EOF' > /tmp/narrative.txt
+          ${{ github.event.client_payload.narrative_text }}
+          NARRATIVE_EOF
+          else
+            echo "session_id=${{ inputs.session_id }}" >> $GITHUB_OUTPUT
+            echo "narrative_type=${{ inputs.narrative_type }}" >> $GITHUB_OUTPUT
+            echo "characters=${{ inputs.characters_involved }}" >> $GITHUB_OUTPUT
+            echo "location=${{ inputs.location }}" >> $GITHUB_OUTPUT
+            echo "mood=${{ inputs.mood }}" >> $GITHUB_OUTPUT
+            cat << 'NARRATIVE_EOF' > /tmp/narrative.txt
+          ${{ inputs.narrative_text }}
+          NARRATIVE_EOF
+          fi
+
+      - name: Log narrative
+        run: |
+          python scripts/log_narrative.py \
+            --session "${{ steps.inputs.outputs.session_id }}" \
+            --type "${{ steps.inputs.outputs.narrative_type }}" \
+            --text-file /tmp/narrative.txt \
+            --characters "${{ steps.inputs.outputs.characters }}" \
+            --location "${{ steps.inputs.outputs.location }}" \
+            --mood "${{ steps.inputs.outputs.mood }}"
+
+      - name: Validate session
+        run: |
+          npm i -g ajv-cli ajv-formats
+          ajv validate -c ajv-formats -r schemas/event.schema.json -s schemas/session.schema.json -d "data/sessions/${{ steps.inputs.outputs.session_id }}.json" --errors=text
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/sessions/
+          git commit -m "Narrative: ${{ steps.inputs.outputs.narrative_type }}"
+          git push
+
+      - name: Output result
+        run: |
+          echo "## Narrative Logged" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Session:** ${{ steps.inputs.outputs.session_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Type:** ${{ steps.inputs.outputs.narrative_type }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.inputs.outputs.location }}" ]; then
+            echo "**Location:** ${{ steps.inputs.outputs.location }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Narrative" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat /tmp/narrative.txt >> $GITHUB_STEP_SUMMARY

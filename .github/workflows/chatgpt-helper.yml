@@ -5,6 +5,21 @@ on:
       reason:
         description: Purpose for invoking ChatGPT helper
         required: false
+      action:
+        description: 'Action to perform'
+        required: false
+        type: choice
+        options:
+          - status
+          - list-characters
+          - list-sessions
+          - get-character
+          - get-session
+        default: status
+      resource_id:
+        description: 'Resource ID (character or session ID)'
+        required: false
+        type: string
   repository_dispatch:
     types: [chatgpt-helper]
 
@@ -18,4 +33,95 @@ jobs:
   helper:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "ChatGPT helper ready"
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Process inputs
+        id: process
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            ACTION="${{ github.event.client_payload.action || 'status' }}"
+            RESOURCE_ID="${{ github.event.client_payload.resource_id || '' }}"
+          else
+            ACTION="${{ inputs.action }}"
+            RESOURCE_ID="${{ inputs.resource_id }}"
+          fi
+          
+          echo "action=$ACTION" >> $GITHUB_OUTPUT
+          echo "resource_id=$RESOURCE_ID" >> $GITHUB_OUTPUT
+
+      - name: Execute action
+        run: |
+          ACTION="${{ steps.process.outputs.action }}"
+          RESOURCE_ID="${{ steps.process.outputs.resource_id }}"
+          
+          echo "## GPT Helper Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          case "$ACTION" in
+            status)
+              echo "### Repository Status" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Characters:** $(ls -1 data/characters/*.json 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+              echo "**Sessions:** $(ls -1 data/sessions/*.json 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Available Workflows" >> $GITHUB_STEP_SUMMARY
+              echo "- \`add-character\`: Create new characters" >> $GITHUB_STEP_SUMMARY
+              echo "- \`update-character\`: Modify existing characters" >> $GITHUB_STEP_SUMMARY
+              echo "- \`create-session\`: Start new game sessions" >> $GITHUB_STEP_SUMMARY
+              echo "- \`log-event\`: Log gameplay events" >> $GITHUB_STEP_SUMMARY
+              echo "- \`gameplay-action\`: Execute game actions (roll, attack, etc.)" >> $GITHUB_STEP_SUMMARY
+              echo "- \`get-state\`: Get current game state" >> $GITHUB_STEP_SUMMARY
+              ;;
+            list-characters)
+              echo "### Characters" >> $GITHUB_STEP_SUMMARY
+              echo '```json' >> $GITHUB_STEP_SUMMARY
+              for f in data/characters/*.json; do
+                if [ -f "$f" ]; then
+                  jq '{id: .id, name: .name, class: .class, lvl: .lvl}' "$f"
+                fi
+              done >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              ;;
+            list-sessions)
+              echo "### Sessions" >> $GITHUB_STEP_SUMMARY
+              echo '```json' >> $GITHUB_STEP_SUMMARY
+              for f in data/sessions/*.json; do
+                if [ -f "$f" ]; then
+                  jq '{id: .id, campaign: .campaign, events: (.events | length)}' "$f"
+                fi
+              done >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              ;;
+            get-character)
+              if [ -n "$RESOURCE_ID" ] && [ -f "data/characters/$RESOURCE_ID.json" ]; then
+                echo "### Character: $RESOURCE_ID" >> $GITHUB_STEP_SUMMARY
+                echo '```json' >> $GITHUB_STEP_SUMMARY
+                cat "data/characters/$RESOURCE_ID.json" >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY
+              else
+                echo "Character not found: $RESOURCE_ID" >> $GITHUB_STEP_SUMMARY
+              fi
+              ;;
+            get-session)
+              if [ -n "$RESOURCE_ID" ] && [ -f "data/sessions/$RESOURCE_ID.json" ]; then
+                echo "### Session: $RESOURCE_ID" >> $GITHUB_STEP_SUMMARY
+                echo '```json' >> $GITHUB_STEP_SUMMARY
+                cat "data/sessions/$RESOURCE_ID.json" >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY
+              else
+                echo "Session not found: $RESOURCE_ID" >> $GITHUB_STEP_SUMMARY
+              fi
+              ;;
+            *)
+              echo "Unknown action: $ACTION" >> $GITHUB_STEP_SUMMARY
+              ;;
+          esac
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*GPT Helper executed at $(date -u +"%Y-%m-%dT%H:%M:%SZ")*" >> $GITHUB_STEP_SUMMARY

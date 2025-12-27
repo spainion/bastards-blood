@@ -1,0 +1,108 @@
+name: GPT World Builder
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'World building action'
+        required: true
+        type: choice
+        options:
+          - create_location
+          - create_npc
+          - create_item
+          - create_quest
+          - create_faction
+          - update_world_state
+          - get_world_data
+      entity_type:
+        description: 'Entity type being created/updated'
+        required: false
+        type: string
+      entity_id:
+        description: 'Entity ID'
+        required: false
+        type: string
+      entity_data:
+        description: 'Entity data as JSON'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [gpt-world]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  world-builder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "action=${{ github.event.client_payload.action }}" >> $GITHUB_OUTPUT
+            echo "entity_type=${{ github.event.client_payload.entity_type }}" >> $GITHUB_OUTPUT
+            echo "entity_id=${{ github.event.client_payload.entity_id }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.entity_data }}' > /tmp/entity_data.json
+          else
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+            echo "entity_type=${{ inputs.entity_type }}" >> $GITHUB_OUTPUT
+            echo "entity_id=${{ inputs.entity_id }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.entity_data }}' > /tmp/entity_data.json
+          fi
+
+      - name: Execute world building action
+        run: |
+          python scripts/world_builder.py \
+            --action "${{ steps.inputs.outputs.action }}" \
+            --entity-type "${{ steps.inputs.outputs.entity_type }}" \
+            --entity-id "${{ steps.inputs.outputs.entity_id }}" \
+            --data-file /tmp/entity_data.json
+
+      - name: Create Pull Request for new content
+        if: contains(fromJSON('["create_location", "create_npc", "create_item", "create_quest", "create_faction"]'), steps.inputs.outputs.action)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "World: ${{ steps.inputs.outputs.action }} - ${{ steps.inputs.outputs.entity_id }}"
+          title: "[GPT World] ${{ steps.inputs.outputs.action }}: ${{ steps.inputs.outputs.entity_id }}"
+          body: |
+            ## World Building Update
+            
+            **Action:** ${{ steps.inputs.outputs.action }}
+            **Entity ID:** ${{ steps.inputs.outputs.entity_id }}
+            
+            ---
+            *This PR was automatically created by the GPT World Builder workflow.*
+          branch: gpt/world-${{ steps.inputs.outputs.entity_id }}-${{ github.run_number }}
+          delete-branch: true
+          labels: gpt-generated,world-building
+
+      - name: Commit state updates
+        if: steps.inputs.outputs.action == 'update_world_state'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "World state update"
+          git push
+
+      - name: Output result
+        run: |
+          echo "## World Builder Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ steps.inputs.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/world_result.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/world_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

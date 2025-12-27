@@ -1,0 +1,107 @@
+name: GPT Combat Manager
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Combat action'
+        required: true
+        type: choice
+        options:
+          - start_combat
+          - next_turn
+          - end_combat
+          - add_combatant
+          - remove_combatant
+          - apply_damage
+          - apply_healing
+          - roll_initiative
+          - get_combat_state
+      session_id:
+        description: 'Session ID'
+        required: true
+        type: string
+      combatants:
+        description: 'Comma-separated character IDs (for start_combat, add_combatant)'
+        required: false
+        type: string
+      target_id:
+        description: 'Target character ID (for damage/healing/remove)'
+        required: false
+        type: string
+      amount:
+        description: 'Amount for damage/healing'
+        required: false
+        type: number
+      parameters:
+        description: 'Additional parameters as JSON'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [gpt-combat]
+
+permissions:
+  contents: write
+
+jobs:
+  combat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "action=${{ github.event.client_payload.action }}" >> $GITHUB_OUTPUT
+            echo "session_id=${{ github.event.client_payload.session_id }}" >> $GITHUB_OUTPUT
+            echo "combatants=${{ github.event.client_payload.combatants }}" >> $GITHUB_OUTPUT
+            echo "target_id=${{ github.event.client_payload.target_id }}" >> $GITHUB_OUTPUT
+            echo "amount=${{ github.event.client_payload.amount }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.parameters }}' > /tmp/params.json
+          else
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+            echo "session_id=${{ inputs.session_id }}" >> $GITHUB_OUTPUT
+            echo "combatants=${{ inputs.combatants }}" >> $GITHUB_OUTPUT
+            echo "target_id=${{ inputs.target_id }}" >> $GITHUB_OUTPUT
+            echo "amount=${{ inputs.amount }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.parameters }}' > /tmp/params.json
+          fi
+
+      - name: Execute combat action
+        run: |
+          python scripts/combat_manager.py \
+            --action "${{ steps.inputs.outputs.action }}" \
+            --session "${{ steps.inputs.outputs.session_id }}" \
+            --combatants "${{ steps.inputs.outputs.combatants }}" \
+            --target "${{ steps.inputs.outputs.target_id }}" \
+            --amount "${{ steps.inputs.outputs.amount }}" \
+            --params-file /tmp/params.json
+
+      - name: Commit changes
+        if: steps.inputs.outputs.action != 'get_combat_state'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "Combat: ${{ steps.inputs.outputs.action }}"
+          git push
+
+      - name: Output result
+        run: |
+          echo "## Combat Action Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ steps.inputs.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Session:** ${{ steps.inputs.outputs.session_id }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/combat_state.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Combat State" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/combat_state.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

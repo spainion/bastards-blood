@@ -1,0 +1,114 @@
+name: Gameplay Action
+on:
+  workflow_dispatch:
+    inputs:
+      action_type:
+        description: 'Type of gameplay action'
+        required: true
+        type: choice
+        options:
+          - roll
+          - attack
+          - cast_spell
+          - use_item
+          - rest
+          - travel
+      session_id:
+        description: 'Session ID'
+        required: true
+        type: string
+      actor:
+        description: 'Actor character ID'
+        required: true
+        type: string
+      target:
+        description: 'Target character ID (if applicable)'
+        required: false
+        type: string
+      parameters:
+        description: 'Action parameters as JSON'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [gameplay-action]
+
+permissions:
+  contents: write
+
+jobs:
+  gameplay-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Process inputs
+        id: process
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            ACTION_TYPE="${{ github.event.client_payload.action_type }}"
+            SESSION_ID="${{ github.event.client_payload.session_id }}"
+            ACTOR="${{ github.event.client_payload.actor }}"
+            TARGET="${{ github.event.client_payload.target || '' }}"
+            PARAMETERS='${{ github.event.client_payload.parameters || '{}' }}'
+          else
+            ACTION_TYPE="${{ inputs.action_type }}"
+            SESSION_ID="${{ inputs.session_id }}"
+            ACTOR="${{ inputs.actor }}"
+            TARGET="${{ inputs.target }}"
+            PARAMETERS='${{ inputs.parameters }}'
+          fi
+          
+          echo "action_type=$ACTION_TYPE" >> $GITHUB_OUTPUT
+          echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
+          echo "actor=$ACTOR" >> $GITHUB_OUTPUT
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
+          echo "$PARAMETERS" > /tmp/parameters.json
+
+      - name: Execute gameplay action
+        id: action
+        run: |
+          python scripts/gameplay_action.py \
+            --action "${{ steps.process.outputs.action_type }}" \
+            --session "${{ steps.process.outputs.session_id }}" \
+            --actor "${{ steps.process.outputs.actor }}" \
+            --target "${{ steps.process.outputs.target }}" \
+            --params-file /tmp/parameters.json
+
+      - name: Validate session
+        run: |
+          npm i -g ajv-cli ajv-formats
+          ajv validate -c ajv-formats -r schemas/event.schema.json -s schemas/session.schema.json -d "data/sessions/${{ steps.process.outputs.session_id }}.json" --errors=text
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Gameplay: ${{ steps.process.outputs.action_type }} by ${{ steps.process.outputs.actor }}"
+            git push
+          fi
+
+      - name: Output result
+        run: |
+          echo "## Gameplay Action Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ steps.process.outputs.action_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** ${{ steps.process.outputs.actor }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.process.outputs.target }}" ]; then
+            echo "**Target:** ${{ steps.process.outputs.target }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/action_result.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/action_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

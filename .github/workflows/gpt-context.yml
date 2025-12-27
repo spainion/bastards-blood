@@ -1,0 +1,118 @@
+name: GPT Context Engine
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Context engine action'
+        required: true
+        type: choice
+        options:
+          - build_context
+          - get_relevant_context
+          - summarize_context
+          - compress_context
+          - merge_contexts
+          - export_context
+      context_type:
+        description: 'Type of context to build'
+        required: false
+        type: choice
+        options:
+          - full_game_state
+          - character_focused
+          - session_focused
+          - combat_focused
+          - narrative_focused
+          - world_focused
+      focus_ids:
+        description: 'Comma-separated IDs to focus context on'
+        required: false
+        type: string
+      max_tokens:
+        description: 'Maximum tokens for context window'
+        required: false
+        type: number
+        default: 4000
+      include_memories:
+        description: 'Include relevant memories'
+        required: false
+        type: boolean
+        default: true
+      include_recent_events:
+        description: 'Number of recent events to include'
+        required: false
+        type: number
+        default: 20
+      parameters:
+        description: 'Additional parameters as JSON'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [gpt-context]
+
+permissions:
+  contents: read
+
+jobs:
+  context-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "action=${{ github.event.client_payload.action }}" >> $GITHUB_OUTPUT
+            echo "context_type=${{ github.event.client_payload.context_type }}" >> $GITHUB_OUTPUT
+            echo "focus_ids=${{ github.event.client_payload.focus_ids }}" >> $GITHUB_OUTPUT
+            echo "max_tokens=${{ github.event.client_payload.max_tokens || '4000' }}" >> $GITHUB_OUTPUT
+            echo "include_memories=${{ github.event.client_payload.include_memories || 'true' }}" >> $GITHUB_OUTPUT
+            echo "include_recent_events=${{ github.event.client_payload.include_recent_events || '20' }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.parameters }}' > /tmp/params.json
+          else
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+            echo "context_type=${{ inputs.context_type }}" >> $GITHUB_OUTPUT
+            echo "focus_ids=${{ inputs.focus_ids }}" >> $GITHUB_OUTPUT
+            echo "max_tokens=${{ inputs.max_tokens }}" >> $GITHUB_OUTPUT
+            echo "include_memories=${{ inputs.include_memories }}" >> $GITHUB_OUTPUT
+            echo "include_recent_events=${{ inputs.include_recent_events }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.parameters }}' > /tmp/params.json
+          fi
+
+      - name: Execute context engine
+        run: |
+          python scripts/context_engine.py \
+            --action "${{ steps.inputs.outputs.action }}" \
+            --context-type "${{ steps.inputs.outputs.context_type }}" \
+            --focus-ids "${{ steps.inputs.outputs.focus_ids }}" \
+            --max-tokens "${{ steps.inputs.outputs.max_tokens }}" \
+            --include-memories "${{ steps.inputs.outputs.include_memories }}" \
+            --include-recent-events "${{ steps.inputs.outputs.include_recent_events }}" \
+            --params-file /tmp/params.json
+
+      - name: Upload context artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: context-result-${{ github.run_number }}
+          path: /tmp/context_result.json
+          retention-days: 1
+
+      - name: Output result
+        run: |
+          echo "## Context Engine Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ steps.inputs.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Context Type:** ${{ steps.inputs.outputs.context_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/context_result.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            head -c 10000 /tmp/context_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

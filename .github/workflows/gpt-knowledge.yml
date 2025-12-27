@@ -1,0 +1,125 @@
+name: GPT Knowledge Base
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Knowledge base action'
+        required: true
+        type: choice
+        options:
+          - index_all
+          - add_document
+          - search
+          - get_related
+          - update_embeddings
+          - get_statistics
+          - export_index
+          - rebuild_index
+      document_type:
+        description: 'Document type'
+        required: false
+        type: choice
+        options:
+          - character
+          - session
+          - world_lore
+          - rules
+          - custom
+      document_id:
+        description: 'Document ID'
+        required: false
+        type: string
+      content:
+        description: 'Document content'
+        required: false
+        type: string
+      search_query:
+        description: 'Search query'
+        required: false
+        type: string
+      top_k:
+        description: 'Number of results to return'
+        required: false
+        type: number
+        default: 10
+      filters:
+        description: 'Search filters as JSON'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [gpt-knowledge]
+
+permissions:
+  contents: write
+
+jobs:
+  knowledge-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "action=${{ github.event.client_payload.action }}" >> $GITHUB_OUTPUT
+            echo "document_type=${{ github.event.client_payload.document_type }}" >> $GITHUB_OUTPUT
+            echo "document_id=${{ github.event.client_payload.document_id }}" >> $GITHUB_OUTPUT
+            echo "search_query=${{ github.event.client_payload.search_query }}" >> $GITHUB_OUTPUT
+            echo "top_k=${{ github.event.client_payload.top_k || '10' }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.content }}' > /tmp/content.txt
+            echo '${{ github.event.client_payload.filters }}' > /tmp/filters.json
+          else
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+            echo "document_type=${{ inputs.document_type }}" >> $GITHUB_OUTPUT
+            echo "document_id=${{ inputs.document_id }}" >> $GITHUB_OUTPUT
+            echo "search_query=${{ inputs.search_query }}" >> $GITHUB_OUTPUT
+            echo "top_k=${{ inputs.top_k }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.content }}' > /tmp/content.txt
+            echo '${{ inputs.filters }}' > /tmp/filters.json
+          fi
+
+      - name: Execute knowledge base action
+        run: |
+          python scripts/knowledge_base.py \
+            --action "${{ steps.inputs.outputs.action }}" \
+            --document-type "${{ steps.inputs.outputs.document_type }}" \
+            --document-id "${{ steps.inputs.outputs.document_id }}" \
+            --search-query "${{ steps.inputs.outputs.search_query }}" \
+            --top-k "${{ steps.inputs.outputs.top_k }}" \
+            --content-file /tmp/content.txt \
+            --filters-file /tmp/filters.json
+
+      - name: Commit changes
+        if: contains(fromJSON('["index_all", "add_document", "update_embeddings", "rebuild_index"]'), steps.inputs.outputs.action)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/knowledge/
+          git diff --staged --quiet || git commit -m "Knowledge base: ${{ steps.inputs.outputs.action }}"
+          git push
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: knowledge-result-${{ github.run_number }}
+          path: /tmp/knowledge_result.json
+          retention-days: 1
+
+      - name: Output result
+        run: |
+          echo "## Knowledge Base Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ steps.inputs.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/knowledge_result.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/knowledge_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

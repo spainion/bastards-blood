@@ -1,0 +1,116 @@
+name: GPT Agent Task
+on:
+  workflow_dispatch:
+    inputs:
+      task_type:
+        description: 'Type of agent task'
+        required: true
+        type: choice
+        options:
+          - analyze_character
+          - suggest_encounter
+          - generate_loot
+          - balance_check
+          - story_hook
+          - npc_dialogue
+          - location_description
+          - combat_summary
+          - session_recap
+          - character_development
+      context:
+        description: 'Context data as JSON'
+        required: false
+        type: string
+        default: '{}'
+      target_ids:
+        description: 'Comma-separated target IDs (characters, sessions, etc.)'
+        required: false
+        type: string
+      output_to_session:
+        description: 'Log output to session as event'
+        required: false
+        type: boolean
+        default: false
+      session_id:
+        description: 'Session ID for output logging'
+        required: false
+        type: string
+  repository_dispatch:
+    types: [gpt-agent-task]
+
+permissions:
+  contents: write
+
+jobs:
+  agent-task:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "task_type=${{ github.event.client_payload.task_type }}" >> $GITHUB_OUTPUT
+            echo "target_ids=${{ github.event.client_payload.target_ids }}" >> $GITHUB_OUTPUT
+            echo "output_to_session=${{ github.event.client_payload.output_to_session || 'false' }}" >> $GITHUB_OUTPUT
+            echo "session_id=${{ github.event.client_payload.session_id }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.context }}' > /tmp/context.json
+          else
+            echo "task_type=${{ inputs.task_type }}" >> $GITHUB_OUTPUT
+            echo "target_ids=${{ inputs.target_ids }}" >> $GITHUB_OUTPUT
+            echo "output_to_session=${{ inputs.output_to_session }}" >> $GITHUB_OUTPUT
+            echo "session_id=${{ inputs.session_id }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.context }}' > /tmp/context.json
+          fi
+
+      - name: Execute agent task
+        run: |
+          python scripts/agent_tasks.py \
+            --task "${{ steps.inputs.outputs.task_type }}" \
+            --targets "${{ steps.inputs.outputs.target_ids }}" \
+            --context-file /tmp/context.json \
+            --output-file /tmp/task_result.json
+
+      - name: Log to session
+        if: steps.inputs.outputs.output_to_session == 'true' && steps.inputs.outputs.session_id != ''
+        run: |
+          python scripts/log_event.py \
+            --session "${{ steps.inputs.outputs.session_id }}" \
+            --type custom \
+            --actor "gpt-agent" \
+            --data-file /tmp/task_result.json
+
+      - name: Commit changes
+        if: steps.inputs.outputs.output_to_session == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "Agent task: ${{ steps.inputs.outputs.task_type }}"
+          git push
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-task-result-${{ github.run_number }}
+          path: /tmp/task_result.json
+          retention-days: 1
+
+      - name: Output result
+        run: |
+          echo "## Agent Task Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Task:** ${{ steps.inputs.outputs.task_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Targets:** ${{ steps.inputs.outputs.target_ids }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/task_result.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/task_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
