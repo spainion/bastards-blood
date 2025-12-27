@@ -1,0 +1,43 @@
+name: GPT Patch Suggestor
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  suggest-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Fetch PR Diff
+        run: |
+          mkdir -p patches
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3.diff" \
+            ${{ github.event.pull_request.diff_url }} > patches/current.diff
+
+      - name: Extract Changed Files
+        run: |
+          grep "^diff --git" patches/current.diff > patches/files.txt
+          echo "🧠 PR touches the following files:"
+          cat patches/files.txt
+
+      - name: (Placeholder) Suggest Patch
+        run: |
+          echo "🔎 GPT engine will analyze and inject review suggestions here."
+          echo "::group::Diff Preview"
+          cat patches/current.diff
+          echo "::endgroup::"
+
+      - name: Upload Patch
+        uses: actions/upload-artifact@v3
+        with:
+          name: gpt-patch-diff
+          path: patches/
