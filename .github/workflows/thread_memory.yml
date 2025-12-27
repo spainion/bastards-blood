@@ -1,0 +1,47 @@
+name: GPT Thread Memory
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+jobs:
+  thread-memory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          pip install --upgrade pip
+          pip install PyYAML
+
+      - name: Parse Thread History
+        run: |
+          echo "🧠 Replaying PR comments for memory stitching..."
+          echo "::group::History"
+          echo "$(jq '.' "$GITHUB_EVENT_PATH")"
+          echo "::endgroup::"
+
+      - name: Save PR Context Memory
+        run: |
+          mkdir -p pr-memory
+          echo "# Memory for PR ${{ github.event.pull_request.number }}" > pr-memory/context.md
+          echo "- PR title: ${{ github.event.pull_request.title }}" >> pr-memory/context.md
+          echo "- Event type: ${{ github.event_name }}" >> pr-memory/context.md
+          echo "- Comment body: ${{ github.event.comment.body || 'N/A' }}" >> pr-memory/context.md
+
+      - name: Upload memory artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gpt-pr-memory
+          path: pr-memory/
