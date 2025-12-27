@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://spainion.github.io/bastards-blood/schemas/event.schema.json",
+  "type": "object",
+  "required": [
+    "id",
+    "ts",
+    "t"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^e_[a-z0-9]{8}$"
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "t": {
+      "type": "string",
+      "enum": [
+        "note",
+        "check",
+        "attack",
+        "damage",
+        "heal",
+        "gain_item",
+        "lose_item",
+        "status",
+        "create_char",
+        "update_char",
+        "custom"
+      ]
+    },
+    "actor": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object"
+    },
+    "result": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
