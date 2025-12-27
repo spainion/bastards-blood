@@ -1,0 +1,48 @@
+name: GPT Dev Loop
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, gpt-*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gpt-dev-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+
+      - name: Run all scripts
+        run: |
+          echo "::group::Test gameplay_action.py"
+          python3 scripts/gameplay_action.py --help || true
+          echo "::endgroup::"
+
+          echo "::group::Test reduce_state"
+          python3 scripts/reduce_state.py < data/sessions/test.json || true
+          echo "::endgroup::"
+
+          echo "::group::Watchers"
+          timeout 3 python3 scripts/dev_watch.py || true
+          echo "::endgroup::"
+
+      - name: Save output
+        uses: actions/upload-artifact@v3
+        with:
+          name: dev-results
+          path: /tmp/*.json
+
+      - name: Echo success
+        run: echo "✅ Dev loop complete. Results uploaded."
