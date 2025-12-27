@@ -1,0 +1,28 @@
+name: GPT PR Autopilot
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  autopilot:
+    runs-on: ubuntu-latest
+    if: github.event.comment.body == '/gpt-auto'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run Autopilot Logic
+        run: |
+          echo "🔁 Starting GPT autopilot for PR ${{ github.event.pull_request.number }}"
+          echo "⚙️  Placeholder for GPT state inspection and PR update tooling"
+
+      - name: Confirm Autopilot Triggered
+        run: echo "✅ Autopilot was triggered successfully by /gpt-auto command"
