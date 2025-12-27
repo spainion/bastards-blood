@@ -1,0 +1,198 @@
+name: Add Character
+on:
+  workflow_dispatch:
+    inputs:
+      character_id:
+        description: 'Character ID (lowercase, alphanumeric with dashes)'
+        required: true
+        type: string
+      character_name:
+        description: 'Character display name'
+        required: true
+        type: string
+      character_class:
+        description: 'Character class (e.g., Warrior, Mage, Rogue)'
+        required: false
+        type: string
+        default: 'Adventurer'
+      level:
+        description: 'Character level (1-20)'
+        required: false
+        type: number
+        default: 1
+      str:
+        description: 'Strength stat (1-20)'
+        required: false
+        type: number
+        default: 10
+      dex:
+        description: 'Dexterity stat (1-20)'
+        required: false
+        type: number
+        default: 10
+      con:
+        description: 'Constitution stat (1-20)'
+        required: false
+        type: number
+        default: 10
+      int:
+        description: 'Intelligence stat (1-20)'
+        required: false
+        type: number
+        default: 10
+      wis:
+        description: 'Wisdom stat (1-20)'
+        required: false
+        type: number
+        default: 10
+      cha:
+        description: 'Charisma stat (1-20)'
+        required: false
+        type: number
+        default: 10
+      hp_max:
+        description: 'Maximum HP'
+        required: false
+        type: number
+        default: 10
+      inventory:
+        description: 'Starting inventory (comma-separated items)'
+        required: false
+        type: string
+        default: ''
+      tags:
+        description: 'Character tags (comma-separated)'
+        required: false
+        type: string
+        default: 'npc'
+      notes:
+        description: 'Character notes/backstory'
+        required: false
+        type: string
+        default: ''
+  repository_dispatch:
+    types: [add-character]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  add-character:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Process inputs
+        id: process
+        run: |
+          # Handle both workflow_dispatch and repository_dispatch
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            CHARACTER_ID="${{ github.event.client_payload.character_id }}"
+            CHARACTER_NAME="${{ github.event.client_payload.character_name }}"
+            CHARACTER_CLASS="${{ github.event.client_payload.character_class || 'Adventurer' }}"
+            LEVEL="${{ github.event.client_payload.level || '1' }}"
+            STR="${{ github.event.client_payload.str || '10' }}"
+            DEX="${{ github.event.client_payload.dex || '10' }}"
+            CON="${{ github.event.client_payload.con || '10' }}"
+            INT="${{ github.event.client_payload.int || '10' }}"
+            WIS="${{ github.event.client_payload.wis || '10' }}"
+            CHA="${{ github.event.client_payload.cha || '10' }}"
+            HP_MAX="${{ github.event.client_payload.hp_max || '10' }}"
+            INVENTORY="${{ github.event.client_payload.inventory || '' }}"
+            TAGS="${{ github.event.client_payload.tags || 'npc' }}"
+            NOTES="${{ github.event.client_payload.notes || '' }}"
+          else
+            CHARACTER_ID="${{ inputs.character_id }}"
+            CHARACTER_NAME="${{ inputs.character_name }}"
+            CHARACTER_CLASS="${{ inputs.character_class }}"
+            LEVEL="${{ inputs.level }}"
+            STR="${{ inputs.str }}"
+            DEX="${{ inputs.dex }}"
+            CON="${{ inputs.con }}"
+            INT="${{ inputs.int }}"
+            WIS="${{ inputs.wis }}"
+            CHA="${{ inputs.cha }}"
+            HP_MAX="${{ inputs.hp_max }}"
+            INVENTORY="${{ inputs.inventory }}"
+            TAGS="${{ inputs.tags }}"
+            NOTES="${{ inputs.notes }}"
+          fi
+          
+          # Validate character_id format
+          if ! echo "$CHARACTER_ID" | grep -qE '^[a-z0-9-]+$'; then
+            echo "Error: character_id must be lowercase alphanumeric with dashes only"
+            exit 1
+          fi
+          
+          echo "character_id=$CHARACTER_ID" >> $GITHUB_OUTPUT
+          echo "character_name=$CHARACTER_NAME" >> $GITHUB_OUTPUT
+          echo "character_class=$CHARACTER_CLASS" >> $GITHUB_OUTPUT
+          echo "level=$LEVEL" >> $GITHUB_OUTPUT
+          echo "str=$STR" >> $GITHUB_OUTPUT
+          echo "dex=$DEX" >> $GITHUB_OUTPUT
+          echo "con=$CON" >> $GITHUB_OUTPUT
+          echo "int=$INT" >> $GITHUB_OUTPUT
+          echo "wis=$WIS" >> $GITHUB_OUTPUT
+          echo "cha=$CHA" >> $GITHUB_OUTPUT
+          echo "hp_max=$HP_MAX" >> $GITHUB_OUTPUT
+          echo "inventory=$INVENTORY" >> $GITHUB_OUTPUT
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "notes=$NOTES" >> $GITHUB_OUTPUT
+
+      - name: Create character JSON
+        run: |
+          python scripts/create_character.py \
+            --id "${{ steps.process.outputs.character_id }}" \
+            --name "${{ steps.process.outputs.character_name }}" \
+            --class "${{ steps.process.outputs.character_class }}" \
+            --level "${{ steps.process.outputs.level }}" \
+            --str "${{ steps.process.outputs.str }}" \
+            --dex "${{ steps.process.outputs.dex }}" \
+            --con "${{ steps.process.outputs.con }}" \
+            --int "${{ steps.process.outputs.int }}" \
+            --wis "${{ steps.process.outputs.wis }}" \
+            --cha "${{ steps.process.outputs.cha }}" \
+            --hp-max "${{ steps.process.outputs.hp_max }}" \
+            --inventory "${{ steps.process.outputs.inventory }}" \
+            --tags "${{ steps.process.outputs.tags }}" \
+            --notes "${{ steps.process.outputs.notes }}"
+
+      - name: Validate character
+        run: |
+          npm i -g ajv-cli ajv-formats
+          ajv validate -c ajv-formats -s schemas/character.schema.json -d "data/characters/${{ steps.process.outputs.character_id }}.json" --errors=text
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Add character: ${{ steps.process.outputs.character_name }}"
+          title: "[GPT] Add character: ${{ steps.process.outputs.character_name }}"
+          body: |
+            ## New Character Added via GPT
+            
+            **Character ID:** `${{ steps.process.outputs.character_id }}`
+            **Name:** ${{ steps.process.outputs.character_name }}
+            **Class:** ${{ steps.process.outputs.character_class }}
+            **Level:** ${{ steps.process.outputs.level }}
+            
+            ### Stats
+            - STR: ${{ steps.process.outputs.str }}
+            - DEX: ${{ steps.process.outputs.dex }}
+            - CON: ${{ steps.process.outputs.con }}
+            - INT: ${{ steps.process.outputs.int }}
+            - WIS: ${{ steps.process.outputs.wis }}
+            - CHA: ${{ steps.process.outputs.cha }}
+            
+            **HP:** ${{ steps.process.outputs.hp_max }}
+            
+            ---
+            *This PR was automatically created by the GPT helper workflow.*
+          branch: gpt/add-character-${{ steps.process.outputs.character_id }}
+          delete-branch: true
+          labels: gpt-generated,character

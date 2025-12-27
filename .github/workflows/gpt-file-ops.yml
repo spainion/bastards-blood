@@ -1,0 +1,185 @@
+name: GPT File Operations
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'File operation type'
+        required: true
+        type: choice
+        options:
+          - read
+          - create
+          - update
+          - delete
+          - list
+      file_path:
+        description: 'File path relative to repository root'
+        required: false
+        type: string
+      directory_path:
+        description: 'Directory path for list operation'
+        required: false
+        type: string
+        default: '.'
+      content:
+        description: 'File content (for create/update operations, base64 encoded for binary)'
+        required: false
+        type: string
+      commit_message:
+        description: 'Commit message for changes'
+        required: false
+        type: string
+        default: 'GPT file operation'
+      branch:
+        description: 'Branch to operate on (default: main)'
+        required: false
+        type: string
+        default: 'main'
+      create_pr:
+        description: 'Create PR instead of direct commit'
+        required: false
+        type: boolean
+        default: false
+  repository_dispatch:
+    types: [gpt-file-ops]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  file-operation:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.operation.outputs.result }}
+      file_content: ${{ steps.operation.outputs.file_content }}
+      file_list: ${{ steps.operation.outputs.file_list }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.event.client_payload.branch || 'main' }}
+          fetch-depth: 0
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "operation=${{ github.event.client_payload.operation }}" >> $GITHUB_OUTPUT
+            echo "file_path=${{ github.event.client_payload.file_path }}" >> $GITHUB_OUTPUT
+            echo "directory_path=${{ github.event.client_payload.directory_path || '.' }}" >> $GITHUB_OUTPUT
+            echo "commit_message=${{ github.event.client_payload.commit_message || 'GPT file operation' }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.event.client_payload.branch || 'main' }}" >> $GITHUB_OUTPUT
+            echo "create_pr=${{ github.event.client_payload.create_pr || 'false' }}" >> $GITHUB_OUTPUT
+            # Store content in file to handle special characters
+            echo '${{ github.event.client_payload.content }}' > /tmp/content.txt
+          else
+            echo "operation=${{ inputs.operation }}" >> $GITHUB_OUTPUT
+            echo "file_path=${{ inputs.file_path }}" >> $GITHUB_OUTPUT
+            echo "directory_path=${{ inputs.directory_path }}" >> $GITHUB_OUTPUT
+            echo "commit_message=${{ inputs.commit_message }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+            echo "create_pr=${{ inputs.create_pr }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.content }}' > /tmp/content.txt
+          fi
+
+      - name: Execute operation
+        id: operation
+        run: |
+          OPERATION="${{ steps.inputs.outputs.operation }}"
+          FILE_PATH="${{ steps.inputs.outputs.file_path }}"
+          DIR_PATH="${{ steps.inputs.outputs.directory_path }}"
+          
+          case "$OPERATION" in
+            read)
+              if [ -f "$FILE_PATH" ]; then
+                # Output file content as base64 for safe transport
+                CONTENT=$(base64 -w 0 "$FILE_PATH")
+                echo "file_content=$CONTENT" >> $GITHUB_OUTPUT
+                echo "result=success" >> $GITHUB_OUTPUT
+                echo "## File Content" >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY
+                cat "$FILE_PATH" >> $GITHUB_STEP_SUMMARY
+                echo '```' >> $GITHUB_STEP_SUMMARY
+              else
+                echo "result=error: file not found" >> $GITHUB_OUTPUT
+              fi
+              ;;
+            
+            create)
+              if [ -f "$FILE_PATH" ]; then
+                echo "result=error: file already exists" >> $GITHUB_OUTPUT
+              else
+                mkdir -p "$(dirname "$FILE_PATH")"
+                cat /tmp/content.txt > "$FILE_PATH"
+                echo "result=success" >> $GITHUB_OUTPUT
+              fi
+              ;;
+            
+            update)
+              if [ -f "$FILE_PATH" ]; then
+                cat /tmp/content.txt > "$FILE_PATH"
+                echo "result=success" >> $GITHUB_OUTPUT
+              else
+                echo "result=error: file not found" >> $GITHUB_OUTPUT
+              fi
+              ;;
+            
+            delete)
+              if [ -f "$FILE_PATH" ]; then
+                rm "$FILE_PATH"
+                echo "result=success" >> $GITHUB_OUTPUT
+              else
+                echo "result=error: file not found" >> $GITHUB_OUTPUT
+              fi
+              ;;
+            
+            list)
+              FILE_LIST=$(find "$DIR_PATH" -maxdepth 2 -type f -name "*.json" | sort | head -100)
+              echo "file_list<<EOF" >> $GITHUB_OUTPUT
+              echo "$FILE_LIST" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+              echo "result=success" >> $GITHUB_OUTPUT
+              echo "## Directory Listing" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "$FILE_LIST" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              ;;
+            
+            *)
+              echo "result=error: unknown operation" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Commit changes
+        if: steps.inputs.outputs.operation != 'read' && steps.inputs.outputs.operation != 'list' && steps.operation.outputs.result == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if [ "${{ steps.inputs.outputs.create_pr }}" = "true" ]; then
+            BRANCH_NAME="gpt/file-op-${{ github.run_number }}"
+            git checkout -b "$BRANCH_NAME"
+            git add -A
+            git commit -m "${{ steps.inputs.outputs.commit_message }}"
+            git push origin "$BRANCH_NAME"
+            
+            # Create PR using gh CLI
+            gh pr create \
+              --title "[GPT] ${{ steps.inputs.outputs.commit_message }}" \
+              --body "Automated file operation by GPT.\n\nOperation: ${{ steps.inputs.outputs.operation }}\nFile: ${{ steps.inputs.outputs.file_path }}" \
+              --base main \
+              --head "$BRANCH_NAME"
+          else
+            git add -A
+            git commit -m "${{ steps.inputs.outputs.commit_message }}" || echo "No changes to commit"
+            git push
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Output result
+        run: |
+          echo "## Operation Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Operation:** ${{ steps.inputs.outputs.operation }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Result:** ${{ steps.operation.outputs.result }}" >> $GITHUB_STEP_SUMMARY

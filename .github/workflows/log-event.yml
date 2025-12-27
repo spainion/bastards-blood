@@ -1,0 +1,110 @@
+name: Log Game Event
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: 'Session ID (YYYY-MM-DD-NNNN format)'
+        required: true
+        type: string
+      event_type:
+        description: 'Event type'
+        required: true
+        type: choice
+        options:
+          - note
+          - check
+          - attack
+          - damage
+          - heal
+          - gain_item
+          - lose_item
+          - status
+          - create_char
+          - update_char
+          - custom
+      actor:
+        description: 'Actor character ID (who performs the action)'
+        required: false
+        type: string
+      target:
+        description: 'Target character ID (who receives the action)'
+        required: false
+        type: string
+      event_data:
+        description: 'Event data as JSON object'
+        required: false
+        type: string
+        default: '{}'
+      event_result:
+        description: 'Event result as JSON object'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [log-event]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  log-event:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Process inputs
+        id: process
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            SESSION_ID="${{ github.event.client_payload.session_id }}"
+            EVENT_TYPE="${{ github.event.client_payload.event_type }}"
+            ACTOR="${{ github.event.client_payload.actor || '' }}"
+            TARGET="${{ github.event.client_payload.target || '' }}"
+            EVENT_DATA='${{ github.event.client_payload.event_data || '{}' }}'
+            EVENT_RESULT='${{ github.event.client_payload.event_result || '{}' }}'
+          else
+            SESSION_ID="${{ inputs.session_id }}"
+            EVENT_TYPE="${{ inputs.event_type }}"
+            ACTOR="${{ inputs.actor }}"
+            TARGET="${{ inputs.target }}"
+            EVENT_DATA='${{ inputs.event_data }}'
+            EVENT_RESULT='${{ inputs.event_result }}'
+          fi
+          
+          echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
+          echo "event_type=$EVENT_TYPE" >> $GITHUB_OUTPUT
+          echo "actor=$ACTOR" >> $GITHUB_OUTPUT
+          echo "target=$TARGET" >> $GITHUB_OUTPUT
+          
+          # Store JSON data in files to avoid shell escaping issues
+          echo "$EVENT_DATA" > /tmp/event_data.json
+          echo "$EVENT_RESULT" > /tmp/event_result.json
+
+      - name: Log event
+        run: |
+          python scripts/log_event.py \
+            --session "${{ steps.process.outputs.session_id }}" \
+            --type "${{ steps.process.outputs.event_type }}" \
+            --actor "${{ steps.process.outputs.actor }}" \
+            --target "${{ steps.process.outputs.target }}" \
+            --data-file /tmp/event_data.json \
+            --result-file /tmp/event_result.json
+
+      - name: Validate session
+        run: |
+          npm i -g ajv-cli ajv-formats
+          ajv validate -c ajv-formats -r schemas/event.schema.json -s schemas/session.schema.json -d "data/sessions/${{ steps.process.outputs.session_id }}.json" --errors=text
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/sessions/
+          git commit -m "Log ${{ steps.process.outputs.event_type }} event to session ${{ steps.process.outputs.session_id }}"
+          git push

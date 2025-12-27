@@ -1,0 +1,74 @@
+name: Get Game State
+on:
+  workflow_dispatch:
+    inputs:
+      session_id:
+        description: 'Session ID to calculate state for (optional - uses latest if not provided)'
+        required: false
+        type: string
+      output_format:
+        description: 'Output format'
+        required: false
+        type: choice
+        options:
+          - summary
+          - full
+        default: summary
+  repository_dispatch:
+    types: [get-state]
+
+permissions:
+  contents: read
+
+jobs:
+  get-state:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Process inputs
+        id: process
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            SESSION_ID="${{ github.event.client_payload.session_id || '' }}"
+            OUTPUT_FORMAT="${{ github.event.client_payload.output_format || 'summary' }}"
+          else
+            SESSION_ID="${{ inputs.session_id }}"
+            OUTPUT_FORMAT="${{ inputs.output_format }}"
+          fi
+          
+          # If no session specified, get the latest one
+          if [ -z "$SESSION_ID" ]; then
+            SESSION_ID=$(ls -1 data/sessions/*.json | sort -r | head -1 | xargs basename | sed 's/.json$//')
+          fi
+          
+          echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
+          echo "output_format=$OUTPUT_FORMAT" >> $GITHUB_OUTPUT
+
+      - name: Calculate state
+        id: state
+        run: |
+          if [ "${{ steps.process.outputs.output_format }}" = "full" ]; then
+            python scripts/get_game_state.py \
+              --session "${{ steps.process.outputs.session_id }}" \
+              --format full > /tmp/state.json
+          else
+            python scripts/get_game_state.py \
+              --session "${{ steps.process.outputs.session_id }}" \
+              --format summary > /tmp/state.json
+          fi
+          
+          cat /tmp/state.json
+
+      - name: Output state
+        run: |
+          echo "## Game State for Session ${{ steps.process.outputs.session_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/state.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

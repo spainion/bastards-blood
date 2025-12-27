@@ -1,0 +1,459 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Bastards Blood RPG API",
+    "description": "API for managing the Bastards Blood RPG game state via GitHub Actions workflows",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.github.com"
+    }
+  ],
+  "paths": {
+    "/repos/{owner}/{repo}/dispatches": {
+      "post": {
+        "operationId": "triggerWorkflow",
+        "summary": "Trigger a workflow via repository dispatch",
+        "description": "Triggers a GitHub Actions workflow using repository dispatch events",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "spainion"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "bastards-blood"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepositoryDispatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Workflow triggered successfully"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents/data/characters": {
+      "get": {
+        "operationId": "listCharacters",
+        "summary": "List all characters",
+        "description": "Get a list of all character files in the repository",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "spainion"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "bastards-blood"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of character files"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents/data/characters/{filename}": {
+      "get": {
+        "operationId": "getCharacter",
+        "summary": "Get a specific character",
+        "description": "Get the JSON data for a specific character",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "spainion"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "bastards-blood"
+            }
+          },
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Character filename (e.g., char-akira.json)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Character data"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents/data/sessions": {
+      "get": {
+        "operationId": "listSessions",
+        "summary": "List all sessions",
+        "description": "Get a list of all session files in the repository",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "spainion"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "bastards-blood"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of session files"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/contents/data/sessions/{filename}": {
+      "get": {
+        "operationId": "getSession",
+        "summary": "Get a specific session",
+        "description": "Get the JSON data for a specific session",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "spainion"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "bastards-blood"
+            }
+          },
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Session filename (e.g., 2025-10-20-0001.json)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session data"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/actions/workflows": {
+      "get": {
+        "operationId": "listWorkflows",
+        "summary": "List available workflows",
+        "description": "Get a list of all available GitHub Actions workflows",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "spainion"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "bastards-blood"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of workflows"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/actions/runs": {
+      "get": {
+        "operationId": "listWorkflowRuns",
+        "summary": "List workflow runs",
+        "description": "Get recent workflow runs to check status",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "spainion"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "bastards-blood"
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of workflow runs"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RepositoryDispatch": {
+        "type": "object",
+        "required": ["event_type"],
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "description": "The workflow to trigger",
+            "enum": [
+              "add-character",
+              "update-character",
+              "create-session",
+              "log-event",
+              "gameplay-action",
+              "get-state",
+              "chatgpt-helper",
+              "gpt-file-ops",
+              "gpt-query",
+              "gpt-batch",
+              "gpt-combat",
+              "gpt-narrative",
+              "gpt-world",
+              "gpt-sync",
+              "gpt-agent-task",
+              "gpt-memory",
+              "gpt-context",
+              "gpt-prompt",
+              "gpt-knowledge"
+            ]
+          },
+          "client_payload": {
+            "type": "object",
+            "description": "Data to pass to the workflow"
+          }
+        }
+      },
+      "AddCharacterPayload": {
+        "type": "object",
+        "required": ["character_id", "character_name"],
+        "properties": {
+          "character_id": {
+            "type": "string",
+            "description": "Unique character ID (lowercase, alphanumeric with dashes)",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "character_name": {
+            "type": "string",
+            "description": "Character display name"
+          },
+          "character_class": {
+            "type": "string",
+            "description": "Character class",
+            "default": "Adventurer"
+          },
+          "level": {
+            "type": "integer",
+            "description": "Character level",
+            "default": 1,
+            "minimum": 1,
+            "maximum": 20
+          },
+          "str": {
+            "type": "integer",
+            "description": "Strength stat",
+            "default": 10
+          },
+          "dex": {
+            "type": "integer",
+            "description": "Dexterity stat",
+            "default": 10
+          },
+          "con": {
+            "type": "integer",
+            "description": "Constitution stat",
+            "default": 10
+          },
+          "int": {
+            "type": "integer",
+            "description": "Intelligence stat",
+            "default": 10
+          },
+          "wis": {
+            "type": "integer",
+            "description": "Wisdom stat",
+            "default": 10
+          },
+          "cha": {
+            "type": "integer",
+            "description": "Charisma stat",
+            "default": 10
+          },
+          "hp_max": {
+            "type": "integer",
+            "description": "Maximum HP",
+            "default": 10
+          },
+          "inventory": {
+            "type": "string",
+            "description": "Comma-separated list of starting items"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Comma-separated list of tags",
+            "default": "npc"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Character notes/backstory"
+          }
+        }
+      },
+      "GameplayActionPayload": {
+        "type": "object",
+        "required": ["action_type", "session_id", "actor"],
+        "properties": {
+          "action_type": {
+            "type": "string",
+            "description": "Type of gameplay action",
+            "enum": ["roll", "attack", "cast_spell", "use_item", "rest", "travel"]
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Session ID (YYYY-MM-DD-NNNN format)"
+          },
+          "actor": {
+            "type": "string",
+            "description": "Actor character ID"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target character ID (if applicable)"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Action-specific parameters"
+          }
+        }
+      },
+      "LogEventPayload": {
+        "type": "object",
+        "required": ["session_id", "event_type"],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Session ID"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "Event type",
+            "enum": ["note", "check", "attack", "damage", "heal", "gain_item", "lose_item", "status", "create_char", "update_char", "custom"]
+          },
+          "actor": {
+            "type": "string",
+            "description": "Actor character ID"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target character ID"
+          },
+          "event_data": {
+            "type": "string",
+            "description": "Event data as JSON string"
+          },
+          "event_result": {
+            "type": "string",
+            "description": "Event result as JSON string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "GitHub Personal Access Token with repo and workflow permissions"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}

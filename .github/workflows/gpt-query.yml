@@ -1,0 +1,86 @@
+name: GPT Query Data
+on:
+  workflow_dispatch:
+    inputs:
+      query_type:
+        description: 'Type of query'
+        required: true
+        type: choice
+        options:
+          - all_characters
+          - all_sessions
+          - character_by_id
+          - session_by_id
+          - characters_by_tag
+          - game_state
+          - recent_events
+          - search
+      resource_id:
+        description: 'Resource ID (for character_by_id, session_by_id)'
+        required: false
+        type: string
+      filter_value:
+        description: 'Filter value (tag name, search term, etc.)'
+        required: false
+        type: string
+      limit:
+        description: 'Maximum results to return'
+        required: false
+        type: number
+        default: 50
+  repository_dispatch:
+    types: [gpt-query]
+
+permissions:
+  contents: read
+
+jobs:
+  query:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "query_type=${{ github.event.client_payload.query_type }}" >> $GITHUB_OUTPUT
+            echo "resource_id=${{ github.event.client_payload.resource_id }}" >> $GITHUB_OUTPUT
+            echo "filter_value=${{ github.event.client_payload.filter_value }}" >> $GITHUB_OUTPUT
+            echo "limit=${{ github.event.client_payload.limit || '50' }}" >> $GITHUB_OUTPUT
+          else
+            echo "query_type=${{ inputs.query_type }}" >> $GITHUB_OUTPUT
+            echo "resource_id=${{ inputs.resource_id }}" >> $GITHUB_OUTPUT
+            echo "filter_value=${{ inputs.filter_value }}" >> $GITHUB_OUTPUT
+            echo "limit=${{ inputs.limit }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute query
+        id: query
+        run: |
+          python scripts/query_data.py \
+            --query-type "${{ steps.inputs.outputs.query_type }}" \
+            --resource-id "${{ steps.inputs.outputs.resource_id }}" \
+            --filter "${{ steps.inputs.outputs.filter_value }}" \
+            --limit "${{ steps.inputs.outputs.limit }}" \
+            --output-file /tmp/query_result.json
+          
+          echo "## Query Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Query Type:** ${{ steps.inputs.outputs.query_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/query_result.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: query-result
+          path: /tmp/query_result.json
+          retention-days: 1

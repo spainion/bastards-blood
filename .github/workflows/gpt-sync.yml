@@ -1,0 +1,108 @@
+name: GPT Data Sync
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Sync action'
+        required: true
+        type: choice
+        options:
+          - export_all
+          - export_characters
+          - export_sessions
+          - export_world
+          - import_data
+          - validate_all
+          - backup
+          - restore
+      format:
+        description: 'Export format'
+        required: false
+        type: choice
+        options:
+          - json
+          - yaml
+          - markdown
+        default: json
+      include_computed:
+        description: 'Include computed state in export'
+        required: false
+        type: boolean
+        default: true
+  repository_dispatch:
+    types: [gpt-sync]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "action=${{ github.event.client_payload.action }}" >> $GITHUB_OUTPUT
+            echo "format=${{ github.event.client_payload.format || 'json' }}" >> $GITHUB_OUTPUT
+            echo "include_computed=${{ github.event.client_payload.include_computed || 'true' }}" >> $GITHUB_OUTPUT
+          else
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+            echo "format=${{ inputs.format }}" >> $GITHUB_OUTPUT
+            echo "include_computed=${{ inputs.include_computed }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Execute sync action
+        run: |
+          python scripts/data_sync.py \
+            --action "${{ steps.inputs.outputs.action }}" \
+            --format "${{ steps.inputs.outputs.format }}" \
+            --include-computed "${{ steps.inputs.outputs.include_computed }}"
+
+      - name: Upload export artifact
+        if: startsWith(steps.inputs.outputs.action, 'export') || steps.inputs.outputs.action == 'backup'
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-export-${{ github.run_number }}
+          path: /tmp/export/
+          retention-days: 7
+
+      - name: Validate all data
+        if: steps.inputs.outputs.action == 'validate_all'
+        run: |
+          npm i -g ajv-cli ajv-formats
+          echo "## Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Characters" >> $GITHUB_STEP_SUMMARY
+          if ajv validate -c ajv-formats -s schemas/character.schema.json -d 'data/characters/*.json' --errors=text 2>&1; then
+            echo "✅ All characters valid" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Character validation errors found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Sessions" >> $GITHUB_STEP_SUMMARY
+          if ajv validate -c ajv-formats -r schemas/event.schema.json -s schemas/session.schema.json -d 'data/sessions/*.json' --errors=text 2>&1; then
+            echo "✅ All sessions valid" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Session validation errors found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Output result
+        run: |
+          echo "## Sync Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ steps.inputs.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Format:** ${{ steps.inputs.outputs.format }}" >> $GITHUB_STEP_SUMMARY

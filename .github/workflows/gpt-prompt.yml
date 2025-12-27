@@ -1,0 +1,122 @@
+name: GPT Prompt Engine
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Prompt engine action'
+        required: true
+        type: choice
+        options:
+          - generate_prompt
+          - store_template
+          - get_template
+          - list_templates
+          - compose_chain
+          - execute_chain
+      template_id:
+        description: 'Template ID'
+        required: false
+        type: string
+      prompt_type:
+        description: 'Type of prompt to generate'
+        required: false
+        type: choice
+        options:
+          - narration
+          - dialogue
+          - combat_description
+          - world_building
+          - character_voice
+          - dm_assistant
+          - rules_query
+          - story_generation
+          - encounter_design
+          - custom
+      variables:
+        description: 'Template variables as JSON'
+        required: false
+        type: string
+        default: '{}'
+      include_context:
+        description: 'Include game context in prompt'
+        required: false
+        type: boolean
+        default: true
+      model_hints:
+        description: 'Hints for model behavior as JSON'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [gpt-prompt]
+
+permissions:
+  contents: write
+
+jobs:
+  prompt-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "action=${{ github.event.client_payload.action }}" >> $GITHUB_OUTPUT
+            echo "template_id=${{ github.event.client_payload.template_id }}" >> $GITHUB_OUTPUT
+            echo "prompt_type=${{ github.event.client_payload.prompt_type }}" >> $GITHUB_OUTPUT
+            echo "include_context=${{ github.event.client_payload.include_context || 'true' }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.variables }}' > /tmp/variables.json
+            echo '${{ github.event.client_payload.model_hints }}' > /tmp/model_hints.json
+          else
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+            echo "template_id=${{ inputs.template_id }}" >> $GITHUB_OUTPUT
+            echo "prompt_type=${{ inputs.prompt_type }}" >> $GITHUB_OUTPUT
+            echo "include_context=${{ inputs.include_context }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.variables }}' > /tmp/variables.json
+            echo '${{ inputs.model_hints }}' > /tmp/model_hints.json
+          fi
+
+      - name: Execute prompt engine
+        run: |
+          python scripts/prompt_engine.py \
+            --action "${{ steps.inputs.outputs.action }}" \
+            --template-id "${{ steps.inputs.outputs.template_id }}" \
+            --prompt-type "${{ steps.inputs.outputs.prompt_type }}" \
+            --include-context "${{ steps.inputs.outputs.include_context }}" \
+            --variables-file /tmp/variables.json \
+            --model-hints-file /tmp/model_hints.json
+
+      - name: Commit template changes
+        if: contains(fromJSON('["store_template"]'), steps.inputs.outputs.action)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/prompts/
+          git diff --staged --quiet || git commit -m "Prompt template: ${{ steps.inputs.outputs.template_id }}"
+          git push
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-result-${{ github.run_number }}
+          path: /tmp/prompt_result.json
+          retention-days: 1
+
+      - name: Output result
+        run: |
+          echo "## Prompt Engine Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ steps.inputs.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/prompt_result.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/prompt_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

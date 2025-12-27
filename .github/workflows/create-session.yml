@@ -1,0 +1,78 @@
+name: Create Session
+on:
+  workflow_dispatch:
+    inputs:
+      campaign:
+        description: 'Campaign name'
+        required: false
+        type: string
+        default: 'bastards-blood'
+      session_date:
+        description: 'Session date (YYYY-MM-DD format, defaults to today)'
+        required: false
+        type: string
+  repository_dispatch:
+    types: [create-session]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-session:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Process inputs
+        id: process
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            CAMPAIGN="${{ github.event.client_payload.campaign || 'bastards-blood' }}"
+            SESSION_DATE="${{ github.event.client_payload.session_date || '' }}"
+          else
+            CAMPAIGN="${{ inputs.campaign }}"
+            SESSION_DATE="${{ inputs.session_date }}"
+          fi
+          
+          # Default to today's date if not provided
+          if [ -z "$SESSION_DATE" ]; then
+            SESSION_DATE=$(date +%Y-%m-%d)
+          fi
+          
+          echo "campaign=$CAMPAIGN" >> $GITHUB_OUTPUT
+          echo "session_date=$SESSION_DATE" >> $GITHUB_OUTPUT
+
+      - name: Create session
+        id: create
+        run: |
+          SESSION_ID=$(python scripts/create_session.py \
+            --campaign "${{ steps.process.outputs.campaign }}" \
+            --date "${{ steps.process.outputs.session_date }}")
+          echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
+
+      - name: Validate session
+        run: |
+          npm i -g ajv-cli ajv-formats
+          ajv validate -c ajv-formats -r schemas/event.schema.json -s schemas/session.schema.json -d "data/sessions/${{ steps.create.outputs.session_id }}.json" --errors=text
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/sessions/
+          git commit -m "Create session ${{ steps.create.outputs.session_id }}"
+          git push
+      
+      - name: Output session ID
+        run: |
+          echo "## Session Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Session ID:** \`${{ steps.create.outputs.session_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Use this ID to log events to this session." >> $GITHUB_STEP_SUMMARY

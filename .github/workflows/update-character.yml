@@ -1,0 +1,75 @@
+name: Update Character
+on:
+  workflow_dispatch:
+    inputs:
+      character_id:
+        description: 'Character ID to update'
+        required: true
+        type: string
+      patch_json:
+        description: 'JSON patch object with fields to update'
+        required: true
+        type: string
+  repository_dispatch:
+    types: [update-character]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-character:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Process inputs
+        id: process
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            CHARACTER_ID="${{ github.event.client_payload.character_id }}"
+            PATCH_JSON='${{ github.event.client_payload.patch_json }}'
+          else
+            CHARACTER_ID="${{ inputs.character_id }}"
+            PATCH_JSON='${{ inputs.patch_json }}'
+          fi
+          
+          echo "character_id=$CHARACTER_ID" >> $GITHUB_OUTPUT
+          echo "$PATCH_JSON" > /tmp/patch.json
+
+      - name: Update character
+        run: |
+          python scripts/update_character.py \
+            --id "${{ steps.process.outputs.character_id }}" \
+            --patch-file /tmp/patch.json
+
+      - name: Validate character
+        run: |
+          npm i -g ajv-cli ajv-formats
+          ajv validate -c ajv-formats -s schemas/character.schema.json -d "data/characters/${{ steps.process.outputs.character_id }}.json" --errors=text
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Update character: ${{ steps.process.outputs.character_id }}"
+          title: "[GPT] Update character: ${{ steps.process.outputs.character_id }}"
+          body: |
+            ## Character Updated via GPT
+            
+            **Character ID:** `${{ steps.process.outputs.character_id }}`
+            
+            ### Changes Applied
+            ```json
+            $(cat /tmp/patch.json)
+            ```
+            
+            ---
+            *This PR was automatically created by the GPT helper workflow.*
+          branch: gpt/update-character-${{ steps.process.outputs.character_id }}-${{ github.run_number }}
+          delete-branch: true
+          labels: gpt-generated,character-update

@@ -1,0 +1,136 @@
+name: GPT Memory Store
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Memory operation'
+        required: true
+        type: choice
+        options:
+          - store
+          - retrieve
+          - search
+          - update
+          - delete
+          - list_categories
+          - get_context
+          - prune
+      memory_id:
+        description: 'Memory ID (for retrieve/update/delete)'
+        required: false
+        type: string
+      category:
+        description: 'Memory category'
+        required: false
+        type: choice
+        options:
+          - character_knowledge
+          - world_lore
+          - session_history
+          - player_preferences
+          - plot_threads
+          - npc_relationships
+          - item_catalog
+          - rules_clarifications
+          - custom
+      content:
+        description: 'Memory content (JSON for store/update)'
+        required: false
+        type: string
+      tags:
+        description: 'Comma-separated tags for categorization'
+        required: false
+        type: string
+      search_query:
+        description: 'Search query for semantic search'
+        required: false
+        type: string
+      importance:
+        description: 'Memory importance (1-10)'
+        required: false
+        type: number
+        default: 5
+      context_limit:
+        description: 'Max memories to return for context'
+        required: false
+        type: number
+        default: 20
+  repository_dispatch:
+    types: [gpt-memory]
+
+permissions:
+  contents: write
+
+jobs:
+  memory-operation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "operation=${{ github.event.client_payload.operation }}" >> $GITHUB_OUTPUT
+            echo "memory_id=${{ github.event.client_payload.memory_id }}" >> $GITHUB_OUTPUT
+            echo "category=${{ github.event.client_payload.category }}" >> $GITHUB_OUTPUT
+            echo "tags=${{ github.event.client_payload.tags }}" >> $GITHUB_OUTPUT
+            echo "search_query=${{ github.event.client_payload.search_query }}" >> $GITHUB_OUTPUT
+            echo "importance=${{ github.event.client_payload.importance || '5' }}" >> $GITHUB_OUTPUT
+            echo "context_limit=${{ github.event.client_payload.context_limit || '20' }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.content }}' > /tmp/content.json
+          else
+            echo "operation=${{ inputs.operation }}" >> $GITHUB_OUTPUT
+            echo "memory_id=${{ inputs.memory_id }}" >> $GITHUB_OUTPUT
+            echo "category=${{ inputs.category }}" >> $GITHUB_OUTPUT
+            echo "tags=${{ inputs.tags }}" >> $GITHUB_OUTPUT
+            echo "search_query=${{ inputs.search_query }}" >> $GITHUB_OUTPUT
+            echo "importance=${{ inputs.importance }}" >> $GITHUB_OUTPUT
+            echo "context_limit=${{ inputs.context_limit }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.content }}' > /tmp/content.json
+          fi
+
+      - name: Execute memory operation
+        run: |
+          python scripts/memory_store.py \
+            --operation "${{ steps.inputs.outputs.operation }}" \
+            --memory-id "${{ steps.inputs.outputs.memory_id }}" \
+            --category "${{ steps.inputs.outputs.category }}" \
+            --tags "${{ steps.inputs.outputs.tags }}" \
+            --search-query "${{ steps.inputs.outputs.search_query }}" \
+            --importance "${{ steps.inputs.outputs.importance }}" \
+            --context-limit "${{ steps.inputs.outputs.context_limit }}" \
+            --content-file /tmp/content.json
+
+      - name: Commit changes
+        if: contains(fromJSON('["store", "update", "delete", "prune"]'), steps.inputs.outputs.operation)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/memory/
+          git diff --staged --quiet || git commit -m "Memory: ${{ steps.inputs.outputs.operation }}"
+          git push
+
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-result-${{ github.run_number }}
+          path: /tmp/memory_result.json
+          retention-days: 1
+
+      - name: Output result
+        run: |
+          echo "## Memory Operation Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Operation:** ${{ steps.inputs.outputs.operation }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/memory_result.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/memory_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

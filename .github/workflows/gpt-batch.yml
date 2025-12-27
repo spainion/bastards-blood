@@ -1,0 +1,95 @@
+name: GPT Batch Operations
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Batch operation type'
+        required: true
+        type: choice
+        options:
+          - bulk_damage
+          - bulk_heal
+          - distribute_items
+          - apply_status
+          - level_up
+          - reset_hp
+      targets:
+        description: 'Comma-separated list of character IDs'
+        required: true
+        type: string
+      session_id:
+        description: 'Session ID to log events'
+        required: true
+        type: string
+      parameters:
+        description: 'Operation parameters as JSON'
+        required: false
+        type: string
+        default: '{}'
+  repository_dispatch:
+    types: [gpt-batch]
+
+permissions:
+  contents: write
+
+jobs:
+  batch-operation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Process inputs
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "operation=${{ github.event.client_payload.operation }}" >> $GITHUB_OUTPUT
+            echo "targets=${{ github.event.client_payload.targets }}" >> $GITHUB_OUTPUT
+            echo "session_id=${{ github.event.client_payload.session_id }}" >> $GITHUB_OUTPUT
+            echo '${{ github.event.client_payload.parameters }}' > /tmp/params.json
+          else
+            echo "operation=${{ inputs.operation }}" >> $GITHUB_OUTPUT
+            echo "targets=${{ inputs.targets }}" >> $GITHUB_OUTPUT
+            echo "session_id=${{ inputs.session_id }}" >> $GITHUB_OUTPUT
+            echo '${{ inputs.parameters }}' > /tmp/params.json
+          fi
+
+      - name: Execute batch operation
+        run: |
+          python scripts/batch_operations.py \
+            --operation "${{ steps.inputs.outputs.operation }}" \
+            --targets "${{ steps.inputs.outputs.targets }}" \
+            --session "${{ steps.inputs.outputs.session_id }}" \
+            --params-file /tmp/params.json
+
+      - name: Validate data
+        run: |
+          npm i -g ajv-cli ajv-formats
+          ajv validate -c ajv-formats -s schemas/character.schema.json -d 'data/characters/*.json' --errors=text || true
+          ajv validate -c ajv-formats -r schemas/event.schema.json -s schemas/session.schema.json -d 'data/sessions/*.json' --errors=text
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "Batch ${{ steps.inputs.outputs.operation }} on ${{ steps.inputs.outputs.targets }}"
+          git push
+
+      - name: Output result
+        run: |
+          echo "## Batch Operation Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Operation:** ${{ steps.inputs.outputs.operation }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Targets:** ${{ steps.inputs.outputs.targets }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Session:** ${{ steps.inputs.outputs.session_id }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f /tmp/batch_result.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/batch_result.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
