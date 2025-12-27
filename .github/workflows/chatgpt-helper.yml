@@ -1,0 +1,21 @@
+name: ChatGPT helper
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Purpose for invoking ChatGPT helper
+        required: false
+  repository_dispatch:
+    types: [chatgpt-helper]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  workflows: write
+
+jobs:
+  helper:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "ChatGPT helper ready"
