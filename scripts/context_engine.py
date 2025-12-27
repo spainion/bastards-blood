@@ -10,7 +10,12 @@ from typing import Optional
 
 
 def estimate_tokens(text: str) -> int:
-    """Estimate token count (rough approximation: ~4 chars per token)."""
+    """Estimate token count.
+    
+    Note: This is a rough approximation (~4 chars per token) suitable for
+    context window budgeting. For precise token counts, use the actual
+    tokenizer for your target LLM model.
+    """
     return len(text) // 4
 
 

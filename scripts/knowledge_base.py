@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from typing import Optional
@@ -23,13 +24,12 @@ def ensure_knowledge_dirs():
 
 def generate_doc_id(content: str) -> str:
     """Generate a document ID based on content hash."""
-    content_hash = hashlib.md5(content.encode()).hexdigest()[:12]
+    content_hash = hashlib.sha256(content.encode()).hexdigest()[:12]
     return f"doc_{content_hash}"
 
 
 def tokenize(text: str) -> list:
     """Simple tokenization for search."""
-    import re
     # Convert to lowercase and split on non-alphanumeric
     tokens = re.findall(r'\b\w+\b', text.lower())
     # Remove common stop words

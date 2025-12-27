@@ -32,7 +32,7 @@ def ensure_memory_dirs():
 def generate_memory_id(content: str) -> str:
     """Generate a unique memory ID based on content hash."""
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    content_hash = hashlib.md5(content.encode()).hexdigest()[:8]
+    content_hash = hashlib.sha256(content.encode()).hexdigest()[:8]
     return f"mem_{timestamp}_{content_hash}"
 
 

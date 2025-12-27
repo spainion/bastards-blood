@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import random
+import re
 import string
 import sys
 from datetime import datetime, timezone
@@ -19,7 +20,6 @@ def generate_event_id() -> str:
 
 def roll_dice(dice_str: str) -> tuple:
     """Roll dice and return (total, rolls). Format: NdM+B (e.g., 2d6+3)."""
-    import re
     match = re.match(r'(\d+)d(\d+)([+-]\d+)?', dice_str.lower())
     if not match:
         return 0, []
