@@ -83,13 +83,16 @@ jobs:
       - name: Create workspace archive
         env:
           TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
-        run: git archive --format=zip --output=/tmp/workspace.zip "$TARGET_REF"
+        run: |
+          set -euo pipefail
+          git archive --format=zip --output=/tmp/workspace.zip -- "$TARGET_REF"
 
       - name: Capture workspace stats
         id: stats
         run: |
-          FILES=$(jq '.summary.file_count' /tmp/workspace_manifest.json)
-          SIZE=$(jq '.summary.total_size_bytes' /tmp/workspace_manifest.json)
+          set -euo pipefail
+          FILES=$(jq -e '.summary.file_count' /tmp/workspace_manifest.json)
+          SIZE=$(jq -e '.summary.total_size_bytes' /tmp/workspace_manifest.json)
           echo "files=$FILES" >> $GITHUB_OUTPUT
           echo "size=$SIZE" >> $GITHUB_OUTPUT
 
