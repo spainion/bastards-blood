@@ -49,8 +49,6 @@ jobs:
             for name in filenames:
               path = os.path.join(root, name)
               rel = os.path.relpath(path, '.')
-              if rel.startswith('.git/'):
-                continue
               try:
                 with open(path, 'rb') as fh:
                   data = fh.read()
@@ -81,7 +79,7 @@ jobs:
           PY
 
       - name: Create workspace archive
-        run: git archive --format=zip --output=/tmp/workspace.zip HEAD
+        run: git archive --format=zip --output=/tmp/workspace.zip ${{ steps.inputs.outputs.target_ref }}
 
       - name: Capture workspace stats
         id: stats
