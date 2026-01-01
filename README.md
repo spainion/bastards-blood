@@ -37,6 +37,7 @@ This repository is fully integrated with ChatGPT Custom GPTs for AI-powered game
 | `gpt-world` | World building (locations, NPCs, items) |
 | `gpt-sync` | Export, backup, validate data |
 | `gpt-agent-task` | AI-powered analysis and suggestions |
+| `gpt-workspace` | Build workspace bundle and manifest |
 
 #### Memory & AI Integration
 | Action | Description |
@@ -93,6 +94,8 @@ gpt-actions/       # GPT integration files
 | `memory_store.py` | Persistent memory storage |
 | `context_engine.py` | LLM context management |
 | `prompt_engine.py` | Prompt templates and chains |
+| `openrouter_client.py` | Minimal OpenRouter chat helper (dev) |
+| `dev_openrouter_workbench.py` | Run context + prompts through OpenRouter (dev) |
 | `knowledge_base.py` | Semantic search and indexing |
 
 ## Schemas

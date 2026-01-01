@@ -1,0 +1,90 @@
+name: GPT Workspace Setup
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag, or commit to package'
+        required: false
+        default: 'main'
+  repository_dispatch:
+    types: [gpt-workspace]
+
+permissions:
+  contents: read
+
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target ref
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "target_ref=${{ github.event.client_payload.ref || github.event.client_payload.branch || 'main' }}" >> $GITHUB_OUTPUT
+          else
+            echo "target_ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.inputs.outputs.target_ref }}
+          fetch-depth: 0
+
+      - name: Build workspace manifest
+        env:
+          TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
+        run: |
+          python scripts/workspace_manifest.py --ref "$TARGET_REF" --output /tmp/workspace_manifest.json
+
+      - name: Create workspace archive
+        env:
+          TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$TARGET_REF" == -* ]]; then
+            echo "Invalid target ref (starts with '-'): $TARGET_REF" >&2
+            exit 1
+          fi
+          if ! git rev-parse --verify --quiet "$TARGET_REF^{tree}" >/dev/null; then
+            echo "Target ref is not a valid tree: $TARGET_REF" >&2
+            exit 1
+          fi
+          git archive --format=zip --output=/tmp/workspace.zip "$TARGET_REF"
+
+      - name: Capture workspace stats
+        id: stats
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/workspace_manifest.json ]; then
+            echo "workspace_manifest.json is missing or empty" >&2
+            exit 1
+          fi
+          SUMMARY=$(jq -e -r '
+            .summary as $s
+            | [$s.file_count, $s.total_size_bytes]
+            | if any(. == null) then error("missing summary fields") else @tsv end
+          ' /tmp/workspace_manifest.json)
+          read -r FILES SIZE <<<"$SUMMARY"
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+
+      - name: Upload workspace artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-bundle-${{ github.run_number }}
+          path: |
+            /tmp/workspace.zip
+            /tmp/workspace_manifest.json
+          retention-days: 7
+
+      - name: Output summary
+        run: |
+          echo "## Workspace Bundle" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ steps.inputs.outputs.target_ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Files:** ${{ steps.stats.outputs.files }} (total bytes: ${{ steps.stats.outputs.size }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- workspace.zip (repository archive)" >> $GITHUB_STEP_SUMMARY
+          echo "- workspace_manifest.json (full file list with hashes)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Artifacts are attached to this workflow run for download.*" >> $GITHUB_STEP_SUMMARY
