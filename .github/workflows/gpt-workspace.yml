@@ -1,0 +1,113 @@
+name: GPT Workspace Setup
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag, or commit to package'
+        required: false
+        default: 'main'
+  repository_dispatch:
+    types: [gpt-workspace]
+
+permissions:
+  contents: read
+
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target ref
+        id: inputs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "target_ref=${{ github.event.client_payload.ref || github.event.client_payload.branch || 'main' }}" >> $GITHUB_OUTPUT
+          else
+            echo "target_ref=${{ inputs.ref || 'main' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.inputs.outputs.target_ref }}
+          fetch-depth: 0
+
+      - name: Build workspace manifest
+        env:
+          TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from datetime import datetime, timezone
+
+          ignore_dirs = {'.git', '__pycache__', '.venv', 'node_modules'}
+          files = []
+          total_size = 0
+
+          for root, dirs, filenames in os.walk('.'):
+            dirs[:] = [d for d in dirs if d not in ignore_dirs]
+            for name in filenames:
+              path = os.path.join(root, name)
+              rel = os.path.relpath(path, '.')
+              if rel.startswith('.git/'):
+                continue
+              try:
+                with open(path, 'rb') as fh:
+                  data = fh.read()
+              except OSError:
+                continue
+
+              sha = hashlib.sha256(data).hexdigest()
+              size = len(data)
+              total_size += size
+              files.append({
+                "path": rel.replace("\\", "/"),
+                "size": size,
+                "sha256": sha
+              })
+
+          manifest = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "ref": os.environ.get("TARGET_REF", ""),
+            "summary": {
+              "file_count": len(files),
+              "total_size_bytes": total_size
+            },
+            "files": sorted(files, key=lambda f: f["path"])
+          }
+
+          with open('/tmp/workspace_manifest.json', 'w') as f:
+            json.dump(manifest, f, indent=2)
+          PY
+
+      - name: Create workspace archive
+        run: git archive --format=zip --output=/tmp/workspace.zip HEAD
+
+      - name: Capture workspace stats
+        id: stats
+        run: |
+          FILES=$(jq '.summary.file_count' /tmp/workspace_manifest.json)
+          SIZE=$(jq '.summary.total_size_bytes' /tmp/workspace_manifest.json)
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+
+      - name: Upload workspace artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-bundle-${{ github.run_number }}
+          path: |
+            /tmp/workspace.zip
+            /tmp/workspace_manifest.json
+          retention-days: 7
+
+      - name: Output summary
+        run: |
+          echo "## Workspace Bundle" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ steps.inputs.outputs.target_ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Files:** ${{ steps.stats.outputs.files }} (total bytes: ${{ steps.stats.outputs.size }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- workspace.zip (repository archive)" >> $GITHUB_STEP_SUMMARY
+          echo "- workspace_manifest.json (full file list with hashes)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Artifacts are attached to this workflow run for download.*" >> $GITHUB_STEP_SUMMARY

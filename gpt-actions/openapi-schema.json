@@ -300,7 +300,8 @@
               "gpt-memory",
               "gpt-context",
               "gpt-prompt",
-              "gpt-knowledge"
+              "gpt-knowledge",
+              "gpt-workspace"
             ]
           },
           "client_payload": {

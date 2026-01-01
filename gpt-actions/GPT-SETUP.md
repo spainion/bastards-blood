@@ -177,6 +177,7 @@ POST /repos/spainion/bastards-blood/dispatches
 | `gameplay-action.yml` | `gameplay-action` | Execute gameplay action |
 | `get-state.yml` | `get-state` | Calculate game state |
 | `chatgpt-helper.yml` | `chatgpt-helper` | Get repo status/info |
+| `gpt-workspace.yml` | `gpt-workspace` | Build workspace archive and manifest |
 | `validate.yml` | Pull Request | Validate JSON schemas |
 
 ## Data Schemas

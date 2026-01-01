@@ -37,6 +37,7 @@ This repository is fully integrated with ChatGPT Custom GPTs for AI-powered game
 | `gpt-world` | World building (locations, NPCs, items) |
 | `gpt-sync` | Export, backup, validate data |
 | `gpt-agent-task` | AI-powered analysis and suggestions |
+| `gpt-workspace` | Build workspace bundle and manifest |
 
 #### Memory & AI Integration
 | Action | Description |
