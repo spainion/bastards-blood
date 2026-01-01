@@ -94,6 +94,8 @@ gpt-actions/       # GPT integration files
 | `memory_store.py` | Persistent memory storage |
 | `context_engine.py` | LLM context management |
 | `prompt_engine.py` | Prompt templates and chains |
+| `openrouter_client.py` | Minimal OpenRouter chat helper (dev) |
+| `dev_openrouter_workbench.py` | Run context + prompts through OpenRouter (dev) |
 | `knowledge_base.py` | Semantic search and indexing |
 
 ## Schemas

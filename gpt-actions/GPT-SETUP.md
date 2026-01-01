@@ -180,6 +180,21 @@ POST /repos/spainion/bastards-blood/dispatches
 | `gpt-workspace.yml` | `gpt-workspace` | Build workspace archive and manifest |
 | `validate.yml` | Pull Request | Validate JSON schemas |
 
+## Development with OpenRouter (LLM)
+
+For local prompt/context testing with OpenRouter models:
+
+1. Set an environment variable `OPENROUTER_API_KEY` with your key.
+2. Run the helper to send an ad-hoc chat:
+   ```bash
+   python scripts/openrouter_client.py --user "Hello" --model anthropic/claude-3.5-sonnet
+   ```
+3. Run the dev workbench to stitch a prompt + repo context and send it:
+   ```bash
+   python scripts/dev_openrouter_workbench.py --context-type full_game_state --prompt-type narration --model anthropic/claude-3.5-sonnet
+   ```
+   Results are written to `/tmp/dev_openrouter_result.json` for inspection.
+
 ## Data Schemas
 
 ### Character Schema
