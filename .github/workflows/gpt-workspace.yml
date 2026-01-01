@@ -85,14 +85,22 @@ jobs:
           TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
         run: |
           set -euo pipefail
-          git archive --format=zip --output=/tmp/workspace.zip -- "$TARGET_REF"
+          git archive --format=zip --output=/tmp/workspace.zip "$TARGET_REF"
 
       - name: Capture workspace stats
         id: stats
         run: |
           set -euo pipefail
+          if [ ! -s /tmp/workspace_manifest.json ]; then
+            echo "workspace_manifest.json is missing or empty" >&2
+            exit 1
+          fi
           FILES=$(jq -e '.summary.file_count' /tmp/workspace_manifest.json)
           SIZE=$(jq -e '.summary.total_size_bytes' /tmp/workspace_manifest.json)
+          if [ "$FILES" = "null" ] || [ "$SIZE" = "null" ]; then
+            echo "workspace_manifest.json is missing summary fields" >&2
+            exit 1
+          fi
           echo "files=$FILES" >> $GITHUB_OUTPUT
           echo "size=$SIZE" >> $GITHUB_OUTPUT
 
