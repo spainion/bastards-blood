@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import sys
+import tempfile
 from datetime import datetime, timezone
 
 
@@ -65,7 +66,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--output",
-        default="/tmp/workspace_manifest.json",
+        default=os.path.join(tempfile.gettempdir(), "workspace_manifest.json"),
         help="Output path for manifest file",
     )
     args = parser.parse_args()

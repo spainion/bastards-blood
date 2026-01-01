@@ -41,8 +41,8 @@ jobs:
           TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
         run: |
           set -euo pipefail
-          if ! [[ "$TARGET_REF" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ ]]; then
-            echo "Invalid target ref: $TARGET_REF" >&2
+          if [[ "$TARGET_REF" == -* ]]; then
+            echo "Invalid target ref (starts with '-'): $TARGET_REF" >&2
             exit 1
           fi
           if ! git rev-parse --verify --quiet "$TARGET_REF^{tree}" >/dev/null; then
