@@ -38,6 +38,7 @@ jobs:
           import hashlib
           import json
           import os
+          import sys
           from datetime import datetime, timezone
 
           ignore_dirs = {'.git', '__pycache__', '.venv', 'node_modules'}
@@ -52,7 +53,8 @@ jobs:
               try:
                 with open(path, 'rb') as fh:
                   data = fh.read()
-              except OSError:
+              except OSError as exc:
+                print(f"Skipping {rel}: {exc}", file=sys.stderr)
                 continue
 
               sha = hashlib.sha256(data).hexdigest()
@@ -79,7 +81,9 @@ jobs:
           PY
 
       - name: Create workspace archive
-        run: git archive --format=zip --output=/tmp/workspace.zip ${{ steps.inputs.outputs.target_ref }}
+        env:
+          TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
+        run: git archive --format=zip --output=/tmp/workspace.zip "$TARGET_REF"
 
       - name: Capture workspace stats
         id: stats
