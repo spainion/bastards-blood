@@ -34,59 +34,19 @@ jobs:
         env:
           TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
         run: |
-          python - <<'PY'
-          import hashlib
-          import json
-          import os
-          import sys
-          from datetime import datetime, timezone
-
-          ignore_dirs = {'.git', '__pycache__', '.venv', 'node_modules', '.pytest_cache', '.tox', 'dist', 'build'}
-          files = []
-          total_size = 0
-
-          for root, dirs, filenames in os.walk('.'):
-            dirs[:] = [d for d in dirs if d not in ignore_dirs]
-            for name in filenames:
-              path = os.path.join(root, name)
-              rel = os.path.relpath(path, '.')
-              try:
-                with open(path, 'rb') as fh:
-                  data = fh.read()
-              except OSError as exc:
-                print(f"Skipping {rel}: {exc}", file=sys.stderr)
-                continue
-
-              sha = hashlib.sha256(data).hexdigest()
-              size = len(data)
-              total_size += size
-              files.append({
-                "path": rel.replace("\\", "/"),
-                "size": size,
-                "sha256": sha
-              })
-
-          manifest = {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "ref": os.environ.get("TARGET_REF", ""),
-            "summary": {
-              "file_count": len(files),
-              "total_size_bytes": total_size
-            },
-            "files": sorted(files, key=lambda f: f["path"])
-          }
-
-          with open('/tmp/workspace_manifest.json', 'w') as f:
-            json.dump(manifest, f, indent=2)
-          PY
+          python scripts/workspace_manifest.py --ref "$TARGET_REF" --output /tmp/workspace_manifest.json
 
       - name: Create workspace archive
         env:
           TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
         run: |
           set -euo pipefail
-          if ! [[ "$TARGET_REF" =~ ^[A-Za-z0-9._/@-]+$ ]]; then
+          if ! [[ "$TARGET_REF" =~ ^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*$ ]]; then
             echo "Invalid target ref: $TARGET_REF" >&2
+            exit 1
+          fi
+          if ! git rev-parse --verify --quiet "$TARGET_REF^{tree}" >/dev/null; then
+            echo "Target ref is not a valid tree: $TARGET_REF" >&2
             exit 1
           fi
           git archive --format=zip --output=/tmp/workspace.zip "$TARGET_REF"
