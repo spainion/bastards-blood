@@ -41,7 +41,7 @@ jobs:
           import sys
           from datetime import datetime, timezone
 
-          ignore_dirs = {'.git', '__pycache__', '.venv', 'node_modules'}
+          ignore_dirs = {'.git', '__pycache__', '.venv', 'node_modules', '.pytest_cache', '.tox', 'dist', 'build'}
           files = []
           total_size = 0
 
@@ -85,6 +85,10 @@ jobs:
           TARGET_REF: ${{ steps.inputs.outputs.target_ref }}
         run: |
           set -euo pipefail
+          if ! [[ "$TARGET_REF" =~ ^[A-Za-z0-9._/@-]+$ ]]; then
+            echo "Invalid target ref: $TARGET_REF" >&2
+            exit 1
+          fi
           git archive --format=zip --output=/tmp/workspace.zip "$TARGET_REF"
 
       - name: Capture workspace stats
@@ -95,12 +99,12 @@ jobs:
             echo "workspace_manifest.json is missing or empty" >&2
             exit 1
           fi
-          FILES=$(jq -e '.summary.file_count' /tmp/workspace_manifest.json)
-          SIZE=$(jq -e '.summary.total_size_bytes' /tmp/workspace_manifest.json)
-          if [ "$FILES" = "null" ] || [ "$SIZE" = "null" ]; then
-            echo "workspace_manifest.json is missing summary fields" >&2
-            exit 1
-          fi
+          SUMMARY=$(jq -e -r '
+            .summary as $s
+            | [$s.file_count, $s.total_size_bytes]
+            | if any(. == null) then error("missing summary fields") else @tsv end
+          ' /tmp/workspace_manifest.json)
+          read -r FILES SIZE <<<"$SUMMARY"
           echo "files=$FILES" >> $GITHUB_OUTPUT
           echo "size=$SIZE" >> $GITHUB_OUTPUT
 
